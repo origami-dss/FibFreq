@@ -1,0 +1,57 @@
+---
+title: "Introduction to the FibFreq Package with Examples"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to the FibFreq Package with Examples}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+## Example for using the FibFreq package
+
+Take two time series from the data set and plot them.
+
+
+```{r}
+library(FibFreq)
+
+
+ecg1 = MiceFibECGs[,1]
+ecg2 = MiceFibECGs[,2]
+par(mfrow = c(2,1))
+par(oma=c(0,0,0,0)+0.1)
+par(mar=c(4,4,0,0)+0.5)
+plot(ecg1, xlab='Time [s]', col='blue')
+points(ecg1, pch=20, cex=0.2, col='blue')
+
+plot(ecg2, xlab = NULL)
+points(ecg2, pch=18, cex = 0.3)
+
+```
+
+Compute the four different frequency estimates
+
+```{r}
+delta_t = 0.001
+
+
+print("FibFreq of ecg1 [Hz]:")
+print(freq_est(ecg1, delta_t = delta_t))
+print(freq_mode_periodogram(ecg1, delta_t = delta_t))
+freq_max2max(ecg1, delta_t = delta_t)
+freq_threshold_crossing(ecg1, delta_t = delta_t)
+
+print("FibFreq of ecg7 [Hz]:")
+print(freq_est(ecg7, delta_t = delta_t))
+print(freq_mode_periodogram(ecg7, delta_t = delta_t))
+freq_max2max(ecg7, delta_t = delta_t)
+freq_threshold_crossing(ecg7, delta_t = delta_t)
+
+
+```
