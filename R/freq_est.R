@@ -21,7 +21,7 @@ ifft <- function(x) {
 #' freq_est(x1)
 #' freq_est(x2)
 #'
-freq_est <- function(x, delta_t = 1.0, f_min , f_max , names=TRUE) {
+freq_est <- function(x, delta_t = 1.0, f_min , f_max , names = TRUE) {
 
   if(!is.vector(x) & !is.numeric(x) & any(is.na(x)) & any(is.infinite(x))) stop("'x' must be non-infinite real-valued numeric vector")
   if (length(x) == 0L) stop("data series to short")
@@ -88,7 +88,7 @@ freq_est <- function(x, delta_t = 1.0, f_min , f_max , names=TRUE) {
     }
   }
 
-  if (names) names(ftm) <- "Optimized Frequency"
+  if (names) names(ftm) <- "Optimized Frequency "
   return(ftm)
 }
 

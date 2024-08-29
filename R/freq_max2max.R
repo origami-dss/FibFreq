@@ -33,7 +33,7 @@ freq_max2max <- function(x, delta_t = 1.0, ... )
     args$endbehavior <- 0
   }
   args$x <- x
-€
+
   maxmax <- do.call(splus2R::peaks, args)
 
   n_max <- length(maxmax[ maxmax == TRUE])

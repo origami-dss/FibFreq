@@ -22,7 +22,7 @@
 #' argmax_periodogram(x2)
 #' argmax_periodogram(x2, min_freq=0.05, max_freq = 0.15)
 #' argmax_periodogram(x3)
-freq_argmax_periodogram <- function(x, delta_t = 1.0, f_min = 0, f_max = Inf, welch_window = FALSE)
+freq_argmax_periodogram <- function(x, delta_t = 1.0, f_min = 0, f_max = Inf, welch_window = FALSE, names = TRUE)
 {
   if(!is.vector(x) & !is.numeric(x) & any(is.na(x)) & any(is.infinite(x))) stop("'x' must be non-infinite real-valued numeric vector")
   if (length(x) == 0L) stop("data series to short")
@@ -48,7 +48,10 @@ freq_argmax_periodogram <- function(x, delta_t = 1.0, f_min = 0, f_max = Inf, we
   ww <- which.max(PP)
   argmax_freq <-  freq[(which.max(PP))]
   exp_var <- max(PP)/sum(PP)
-  res <- list(freq_argmax_periodogram = argmax_freq, expressed_var = exp_var, f_min = f_min, f_max = f_max)
+  res <- c(freq_argmax_periodogram = argmax_freq, expressed_var = exp_var)
+
+  if (names) names(res) = c("Argmax frequency ", "Expressed variance ")
+
   }
   return(res)
 }

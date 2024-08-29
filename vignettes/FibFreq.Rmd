@@ -42,16 +42,16 @@ delta_t = 0.001
 
 
 print("FibFreq of ecg1 [Hz]:")
-print(freq_est(ecg1, delta_t = delta_t))
-print(freq_mode_periodogram(ecg1, delta_t = delta_t))
-freq_max2max(ecg1, delta_t = delta_t)
-freq_threshold_crossing(ecg1, delta_t = delta_t)
+print(freq_est(ecg1, delta_t = delta_t, 1,25))
+print(freq_argmax_periodogram(ecg1, delta_t = delta_t))
+print(freq_max2max(ecg1, delta_t = delta_t))
+print(freq_threshold_crossing(ecg1, delta_t = delta_t))
 
-print("FibFreq of ecg7 [Hz]:")
-print(freq_est(ecg7, delta_t = delta_t))
-print(freq_mode_periodogram(ecg7, delta_t = delta_t))
-freq_max2max(ecg7, delta_t = delta_t)
-freq_threshold_crossing(ecg7, delta_t = delta_t)
-
-
-```
+#print("FibFreq of ecg7 [Hz]:")
+#print(freq_est(ecg7, delta_t = delta_t))
+#print(freq_mode_periodogram(ecg7, delta_t = delta_t))
+#freq_max2max(ecg7, delta_t = delta_t)
+#freq_threshold_crossing(ecg7, delta_t = delta_t)
+#
+#
+#```

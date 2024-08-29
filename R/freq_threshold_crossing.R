@@ -53,7 +53,7 @@ freq_threshold_crossing <- function(x, delta_t = 1.0, thresh, ...)
       freq_TD_sd <- sd(1./ISI_ZC)
       freq_TD_IQR <- IQR(1./ISI_ZC)
 
-      res <- list("freq_threshold_crossing" = freq_TD, freq_threshold_crossing_sd = freq_TD_sd, freq_threshold_crossing_IQR = freq_TD_IQR, freq_threshold_crossing_thresh = thresh)
+      res <- c(freq_threshold_crossing = freq_TD, freq_threshold_crossing_sd = freq_TD_sd, freq_threshold_crossing_IQR = freq_TD_IQR, freq_threshold_crossing_thresh = thresh)
 
     }
 
