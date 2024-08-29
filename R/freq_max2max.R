@@ -13,7 +13,7 @@
 #' freq_max2max(x2)
 #' freq_max2max(sunspots, delta_t=1./12, span = 51)
 
-freq_max2max <- function(x, delta_t = 1.0, ... )
+freq_max2max <- function(x, delta_t = 1.0, names = TRUE, ... )
 {
   if (!is.vector(x) & !is.numeric(x) & any(is.na(x)) & any(is.infinite(x))) stop("'x' must be non-infinite real-valued numeric vector")
   if (length(x) == 0L) stop("data series to short")
@@ -51,7 +51,8 @@ freq_max2max <- function(x, delta_t = 1.0, ... )
     freq_max2max_sd <- sd(1./ISI_maxmax)
     freq_max2max_IQR <- IQR(1./ISI_maxmax)
 
-    res = list(freq_max2max = freq_max2max, freq_max2max_sd = freq_max2max_sd, freq_max2max_IQR = freq_max2max_IQR, n_max = n_max )
+    res = c(freq_max2max = freq_max2max, freq_max2max_sd = freq_max2max_sd, freq_max2max_IQR = freq_max2max_IQR, n_max = n_max )
+    if (names) names(res) = c("freq_max2max", "sd_freq_max2max", "IQR_freq_max2max", "n_max")
     }
   return(res)
 }

@@ -32,6 +32,7 @@ freq_est <- function(x, delta_t = 1.0, f_min , f_max , names = TRUE) {
   if (f_min >= f_max) stop("'f_min < f_max' must be true")
   if (f_min < 1/length(x)/delta_t) stop("'f_min' must be inside frequency domain")
   if (f_max > 0.5/delta_t) stop("'f_max' must be inside the frequency domain")
+  if (!is.logical(names) & length(names) !=1L) stop("'names' must be logical of length one")
 
 
 #  HOLGER'S VERSION:

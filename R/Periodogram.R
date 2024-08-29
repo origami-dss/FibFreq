@@ -7,7 +7,7 @@
 #' @return a list with the elements Frequency and Power
 #' @export
 #'
-#' @examplesgit
+#' @examples
 #' x1 = rnorm(32)
 #' Periodogram(x1)
 #' Periodogram(x1, delta=0.25)

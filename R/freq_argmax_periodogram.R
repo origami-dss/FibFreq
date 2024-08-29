@@ -32,6 +32,7 @@ freq_argmax_periodogram <- function(x, delta_t = 1.0, f_min = 0, f_max = Inf, we
   if (!is.numeric(f_min) & length(f_min) != 1L & f_min <=0)  stop("'f_min' must be must be positive numeric of length one")
   if (!is.numeric(f_max) & length(f_max) != 1L & f_max <=0)  stop("'f_max' must be must be positive numeric of length one")
   if (f_max <= f_min +1./length(x)/delta_t) stop("frequency range does not exist or does not contain a sampled frequency")
+  if (!is.logical(names) & length(names) !=1L) stop("'names' must be logical of length one")
   if (var(x)== 0)
   {
     warning("'x' does not contain fluctuations, returning NA");
