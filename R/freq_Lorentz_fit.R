@@ -14,10 +14,11 @@
 #' x1 = sin(0.11*2*pi*(1:100));
 #' x2 = sin(0.11*2*pi*(1:100))+ 1.01*sin(0.17*2*pi*(1:100));
 #' x3 = sin(0.10*2*pi*(1:100))+ sin(0.20*2*pi*(1:100));
-#' freq_mode_periodogram(x1)
-#' freq_mode_periodogram(x2)
-#' freq_mode_periodogram(x2, min_freq=0.05, max_freq = 0.15)
-#' freq_mode_periodogram(x3)
+#' freq_Lorentz_fit(x1)
+#' freq_Lorentz_fit(x2)
+#' freq_Lorentz_fit(x2, welch_window = TRUE)
+#' freq_Lorentz_fit(x3)
+#'
 freq_Lorentz_fit <- function(x, delta_t = 1.0, welch_window = FALSE, f_min = 0, f_max = Inf, algorithm = "Whittle")
 {
   if(!is.vector(x) & !is.numeric(x) & any(is.na(x)) & any(is.infinite(x))) stop("'x' must be non-infinite real-valued numeric vector")

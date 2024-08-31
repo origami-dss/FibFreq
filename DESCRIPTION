@@ -2,13 +2,13 @@ Package: FibFreq
 Type: Package
 Title: Frequency Estimation for Essentially Periodic Time Series 
 Version: 0.2.0
-Author: Annette Witt with support of Holger Nobach. and Laura Diaz-Maue, Data are provided by Laura Diaz-Maue
+Author: Annette Witt with support of Holger Nobach and Laura Diaz-Maue, Data are provided by Laura Diaz-Maue
 Maintainer: Annette Witt <annette.witt@med.uni-goettingen.de>
 Description: The Package 'FibFreq' contains four frequency estimation functions which are appropriate for essentially periodoc time series 
     such as the sunspot data or ecg data of fibrillating hearts.
     Also, it provides a data set of 117 murine optical cardiograms.
     They are published here: LD, HN, AW: xxx. Journal of yyy, 2024. 
-License: What license is it under?
+License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.1
@@ -17,5 +17,7 @@ Depends:
     splus2R
 Suggests: 
     knitr,
-    rmarkdown
+    rmarkdown,
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
+Config/testthat/edition: 3

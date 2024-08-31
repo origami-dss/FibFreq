@@ -22,10 +22,9 @@ freq_threshold_crossing <- function(x, delta_t = 1.0, thresh, ...)
   if (delta_t <= 0) stop("'delta_t' must be positive (>0)")
   if (var(x)== 0)
   {
-    warning("'x' does not contain fluctuations, returning NA");
-    res = list(freq_threshold_crossing = NA, freq_threshold_crossing_sd = NA, freq_threshold_crossing_IQR = NA)
-  }
-  if(missing(thresh))
+    message("'x' does not contain fluctuations, returning NA");
+    res = c(freq_threshold_crossing = NA_real_, sd_freq = NA_real_, IQR_freq = NA_real_, thresh = NA_real_)
+  } else      if(missing(thresh))
   {
 
     maxmax <- peaks(x,span=7, strict=FALSE)
@@ -34,15 +33,15 @@ freq_threshold_crossing <- function(x, delta_t = 1.0, thresh, ...)
     x_min <- x[minmin]
 
     if(min(x_max) > max(x_min)) thresh <- 0.5*(min(x_max)+max(x_min)) else thresh <- mean(x)
-  }
-
+  } else
+  {
 
   xx <- x - thresh
   tt_0 <- which(xx[-c(length(xx))]<0 & xx[-c(1)]>0)
   if (length(tt_0)< 2)
     {
-    warning("'x' does not contain enough threshold crossings, returning NA");
-    res <- list(freq_threshold_crossing = NA_real_, freq_threshold_crossing_sd = NA_real_, freq_threshold_crossing_IQR = NA_real_, freq_threshold_crossing_thresh = NA_real_)
+    message("'x' does not contain enough threshold crossings, returning NA");
+    res <- c(freq_threshold_crossing = NA_real_, sd_freq = NA_real_, IQR_freq = NA_real_, thresh = NA_real_)
     }
   else
     {
@@ -53,9 +52,9 @@ freq_threshold_crossing <- function(x, delta_t = 1.0, thresh, ...)
       freq_TD_sd <- sd(1./ISI_ZC)
       freq_TD_IQR <- IQR(1./ISI_ZC)
 
-      res <- c(freq_threshold_crossing = freq_TD, freq_threshold_crossing_sd = freq_TD_sd, freq_threshold_crossing_IQR = freq_TD_IQR, freq_threshold_crossing_thresh = thresh)
+      res <- c(freq_threshold_crossing = freq_TD, sd_freq = freq_TD_sd, IQR_freq = freq_TD_IQR, thresh = thresh)
 
     }
-
+  }
 return(res)
 }

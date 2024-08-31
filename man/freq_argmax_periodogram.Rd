@@ -9,8 +9,7 @@ freq_argmax_periodogram(
   delta_t = 1,
   f_min = 0,
   f_max = Inf,
-  welch_window = FALSE,
-  names = TRUE
+  welch_window = FALSE
 )
 }
 \arguments{
@@ -41,4 +40,5 @@ argmax_periodogram(x1)
 argmax_periodogram(x2)
 argmax_periodogram(x2, min_freq=0.05, max_freq = 0.15)
 argmax_periodogram(x3)
+
 }

@@ -3,5 +3,7 @@
 export(Lorentz_fit_periodogram)
 export(Periodogram)
 export(freq_Lorentz_fit)
+export(freq_argmax_periodogram)
 export(freq_est)
+export(freq_max2max)
 export(freq_threshold_crossing)

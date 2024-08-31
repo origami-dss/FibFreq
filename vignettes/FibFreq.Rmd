@@ -18,12 +18,13 @@ knitr::opts_chunk$set(
 Take two time series from the data set and plot them.
 
 
-```{r}
+```{r setup}
 library(FibFreq)
 
 
 ecg1 = MiceFibECGs[,1]
 ecg2 = MiceFibECGs[,2]
+ecg7 = MiceFibECGs[,7]
 par(mfrow = c(2,1))
 par(oma=c(0,0,0,0)+0.1)
 par(mar=c(4,4,0,0)+0.5)
@@ -42,16 +43,24 @@ delta_t = 0.001
 
 
 print("FibFreq of ecg1 [Hz]:")
-print(freq_est(ecg1, delta_t = delta_t, 5,45))
-print(freq_argmax_periodogram(ecg1, delta_t = delta_t))
-print(freq_max2max(ecg1, delta_t = delta_t))
-print(freq_threshold_crossing(ecg1, delta_t = delta_t))
+print(freq_est(ecg1, delta_t = delta_t, 5,45)[1])
+print(freq_max2max(ecg1, delta_t = delta_t)[1])
+print(freq_threshold_crossing(ecg1, delta_t = delta_t)[1])
+print(freq_argmax_periodogram(ecg1, delta_t = delta_t)[1])
 
-#print("FibFreq of ecg7 [Hz]:")
-#print(freq_est(ecg7, delta_t = delta_t))
-#print(freq_mode_periodogram(ecg7, delta_t = delta_t))
-#freq_max2max(ecg7, delta_t = delta_t)
-#freq_threshold_crossing(ecg7, delta_t = delta_t)
+print("FibFreq of ecg2 [Hz]:")
+print(freq_est(ecg2, delta_t = delta_t, 5,45)[1])
+print(freq_max2max(ecg2, delta_t = delta_t)[1])
+print(freq_threshold_crossing(ecg2, delta_t = delta_t)[1])
+print(freq_argmax_periodogram(ecg2, delta_t = delta_t)[1])
+
+print("FibFreq of ecg7 [Hz]:")
+print(freq_est(ecg7, delta_t = delta_t, 5,45)[1])
+print(freq_max2max(ecg7, delta_t = delta_t)[1])
+print(freq_threshold_crossing(ecg7, delta_t = delta_t)[1])
+print(freq_argmax_periodogram(ecg7, delta_t = delta_t)[1])
+
+
 #
 #
-#```
+```

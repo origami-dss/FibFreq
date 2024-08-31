@@ -30,8 +30,9 @@ This function is fitting a Lorentz function to the periodogram of the time serie
 x1 = sin(0.11*2*pi*(1:100));
 x2 = sin(0.11*2*pi*(1:100))+ 1.01*sin(0.17*2*pi*(1:100));
 x3 = sin(0.10*2*pi*(1:100))+ sin(0.20*2*pi*(1:100));
-freq_mode_periodogram(x1)
-freq_mode_periodogram(x2)
-freq_mode_periodogram(x2, min_freq=0.05, max_freq = 0.15)
-freq_mode_periodogram(x3)
+freq_Lorentz_fit(x1)
+freq_Lorentz_fit(x2)
+freq_Lorentz_fit(x2, welch_window = TRUE)
+freq_Lorentz_fit(x3)
+
 }

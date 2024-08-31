@@ -4,7 +4,7 @@
 \alias{freq_est}
 \title{Frequency Estimation Using the Optimized Period Technique}
 \usage{
-freq_est(x, delta_t = 1, f_min, f_max, names = TRUE)
+freq_est(x, delta_t = 1, f_min, f_max)
 }
 \arguments{
 \item{x}{real valued array containing the values of the time series}

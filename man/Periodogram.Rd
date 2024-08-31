@@ -4,7 +4,7 @@
 \alias{Periodogram}
 \title{Periodogram of a Real-Valued Time Series}
 \usage{
-Periodogram(x, delta_t = 1, welch_window = TRUE)
+Periodogram(x, delta_t = 1, welch_window = FALSE)
 }
 \arguments{
 \item{x}{real valued array containing the values of the time series}
@@ -20,11 +20,12 @@ a list with the elements Frequency and Power
 Periodogram of a Real-Valued Time Series
 }
 \examples{
-x1 = rnorm(32)
+x1 <- rnorm(32)
 Periodogram(x1)
-Periodogram(x1, delta=0.25)
+Periodogram(x1, delta = 0.25)
 Periodogram(x1, welch_window = FALSE)
-x2=rnorm(1024)
-plot(Periodogram(x2))
+x2 <- sin(0.1 * 2 * pi * (1:100));
+plot(Periodogram(x2), type = 'l', co="orange")
+points(Periodogram(x2), pch=21, cex=0.2)
 
 }
