@@ -11,7 +11,7 @@
 #' @export
 #'
 #' @examples
-#' x1 = sin(0.11*2*pi*(1:100));
+#' x1 = sin(0.11*2*pi*(1:1000));
 #' x2 = sin(0.11*2*pi*(1:100))+ 1.01*sin(0.17*2*pi*(1:100));
 #' x3 = sin(0.10*2*pi*(1:100))+ sin(0.20*2*pi*(1:100));
 #' freq_Lorentz_fit(x1)
@@ -43,14 +43,25 @@ freq_Lorentz_fit <- function(x, delta_t = 1.0, welch_window = FALSE, f_min = 0, 
     delta_f <- diff(freq[1:2])
     Pow <- P$Power[w]
     PP <- list(Frequency = freq, Power = Pow)
- #   Pow=Pow/sum(Pow)/delta_f
+    Pow=Pow/sum(Pow)/delta_f
     ww=which.max(Pow)
     argmax_freq <-  freq[ww]
-    Lorentzfit <- nls(Pow ~ normalized_cauchy(PP, location, scale),
+
+  Lorenzfit <- nlminb()
+            Lorentzfit <- nls(Pow ~ normalized_cauchy(PP, location, scale),
                      start = list(location = argmax_freq, scale = 0.002),
-                     lower = list(location = f_min, scale=0.000001),
-                     upper = list(location = f_max, scale=4),
-                     algorithm = "port", trace=TRUE)
+                     lower = list(location = min(freq), scale = 0.000001),
+                     upper = list(location = f_max, scale = 4),
+                     nls.control(tol = 1e-02, scaleOffset = 0, maxiter = 1000, warnOnly = TRUE),
+                     algorithm = "port",
+                    trace=TRUE)
+
+    Lorentzfit_OPTIM <- optim(c(location = argmax_freq, scale = 0.002), Pow - normalized_cauchy(PP, location, scale),
+                      lower = list(location = min(freq), scale = 0.000001),
+                      upper = list(location = f_max, scale = 4),
+                      method = c( "L-BFGS-B"),
+                      trace=TRUE)
+
 
     result <- coef(Lorentzfit)
     Lorentz_freq <-  result[1]
@@ -73,6 +84,41 @@ freq_Lorentz_fit <- function(x, delta_t = 1.0, welch_window = FALSE, f_min = 0, 
 #
 # AUXILIARY FUNCTIONS
 #
+
+diff_cauchy <- function(par, P)
+{
+  Pow <- P$Power
+  freq <- P$Frequency
+  Dcauchy <- dcauchy(freq, par[1], par[2])
+  Dcauchy <- Dcauchy *sum(Pow)/sum(Dcauchy)
+
+  return(sum((Dcauchy-Pow)^2))
+
+}
+
+# S = sum((x-c(f))^2 = sum( x^2 -2*x* c(f) + c(f)^2)
+# dS/ds =   sum (2*x*dc(f,s)/ds + 2*c(f,s) *dc(f,s)/ds)
+#      =   2 sum((x+c(f,s)*dc(f,s/ds)))
+
+
+
+
+
+diff_cauchy.g <- function(par, P)
+{
+  Pow <- P$Power
+  freq <- P$Frequency
+  Dcauchy <- dcauchy(freq, par[1], par[2])
+  Dcauchy <- Dcauchy *sum(Pow)/sum(Dcauchy)
+
+  return(2*sum(Dcauchy-Pow))
+}
+
+diff_cauchy.h <- function(par, P)
+{
+  diag(2,nrow=length(P$Power))
+}
+
 normalized_cauchy <- function(P, location, scale)
   {
   Pow <- P$Power

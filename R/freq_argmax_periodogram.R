@@ -11,7 +11,7 @@
 #' @param f_max upper endpoint of the frequency interval
 #' @param welch_window  if TRUE, the time series will be multiplied with a Welch window before Fourier transform
 #'
-#' @return  a list containing the argmax frequency and the explained variance
+#' @return  a vector containing the argmax frequency and the explained variance
 #' (i.e., the fraction of variance explained by this specific frequency), and the used endpoints of the frequency interval
 #'
 #' @export
@@ -40,7 +40,7 @@ freq_argmax_periodogram <- function(x, delta_t = 1.0, f_min = 0, f_max = Inf, we
   }
   else
   {
-
+ x<- x-mean(x)
   P <- Periodogram(x,  delta_t = delta_t, welch_window = welch_window)
 #  freq <- P$Frequency
   freq = P[,1]
@@ -51,7 +51,8 @@ freq_argmax_periodogram <- function(x, delta_t = 1.0, f_min = 0, f_max = Inf, we
   ww <- which.max(PP)
   argmax_freq <-  freq[(which.max(PP))]
   exp_var <- max(PP)/sum(PP)
-  res <- c(freq_argmax_periodogram = argmax_freq, expressed_var = exp_var)
+  print(c(sum(PP), var(x)))
+  res <- c(freq_argmax_periodogram = argmax_freq, exp_var = exp_var)
 
 
   }

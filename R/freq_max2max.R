@@ -4,7 +4,7 @@
 #' @param delta_t  a real value, the sampling time, default value is delta_t = 1.0
 #' @param ...  arguments to be passed to the function splus2R::peaks. Here span = 11, strict = TRUE and endbehavior = 0 are used as default values.
 #'
-#' @return a vector with the estimated frequency, its standard deviation and its interquartile range
+#' @return a vector with the estimated frequency, its standard deviation, its interquartile range and the number of identified maxima
 #' @export
 #' @examples
 #' x1 = sin(0.11*2*pi*(1:100));

@@ -32,10 +32,11 @@ Periodogram <- function(x, delta_t = 1.0, welch_window = FALSE)
   if (welch_window) x_demean <- x_demean*welch(N)
   P <- abs(fft(x_demean)/N)
   P <- 2 * P[2: (1+ N_half)]^2
-  P <- P /delta_f /N
+  P <- P /delta_f
+#  P[N_half] = 2* P[N_half]
   f <- delta_f * (1 : floor(N_half))
 
-  res <- cbind(Frequency = f, Power = P)
+  res <- list(Frequency = f, Power = P)
   return(res)
 }
 
