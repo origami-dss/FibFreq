@@ -1,0 +1,31 @@
+Package: FibFreq
+Title: An R package for Computing the Fundamental Frequency of Time Series
+Version: 0.0.9.0
+Authors@R: c(
+    person("Annette", "Witt", email = "Annette.Witt@posteo.de", role = c("cre", "aut")),
+    person("Laura", "Diaz-Maue", email = "Laura.Diaz@mpids.mpg.de", role = "aut"),
+    person("Holger", "Nobach", email = "Holger.Nobach@mpids.mpg.de", role = "aut"))
+Description: Irregular oscillations are a typical feature of time series. Examples include ECGs of fibrillating heart, 
+  EEGs of meditating monks, the dynamics of population sizes and the sunspot numbers. 
+  The 'FibFreq' package provides seven functions for estimating the fundamental frequency of univariate time series including quantities measuring the uncertainty of these 
+  estimates and of the regularity of the oscillation. 
+  This package was originally developed for the analysis of electrocardiograms (ECGs) from fibrillating murine hearts, a data set with 112 of such ECGs is included. 
+  The package is closely associated with the manuscript "Unraveling Cardiac Arrhythmia Frequency, Comparative Analysis Using Time and Frequency Domain Algorithms"
+  by Laura Diaz-Maue, Annette Witt, and Holger Nobach, submitted to 'Frontiers in Signal Processing'.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+VignetteBuilder: knitr
+Depends: 
+    R (>= 3.5)
+LazyData: true
+Imports: 
+    splus2R,
+    stats
+Suggests: testthat, 
+    utils,
+    knitr, 
+    tidyverse, 
+    markdown,
+    gridExtra

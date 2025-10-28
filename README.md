@@ -1,0 +1,103 @@
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+# FibFreq
+
+<!-- badges: start -->
+
+<!-- badges: end -->
+
+The goal of the package FibFreq is to provide functions that compute the
+fundamental frequency of oscillatory time series. Examples of such time
+series include ECGs of fibrillating hearts, the sunspot data or
+recordings of respiratory activities. These functions comprise time and
+frequency domain techniques. The time domain techniques require fairly
+smooth time series. The package Fibrfreq does also include a data set
+with 112 of such murine ECGs. **FibFreq** is closely associated with the
+study “Unraveling Cardiac Arrhythmia Frequency: Comparative Analysis
+Using Time and Frequency Domain Algorithms” by Laura Diaz-Maue, Annette
+Witt, and Holger Nobach, published in \[Journal Name\].
+
+## Installation
+
+You can install the development version of FibFreq from
+[GitHub](https://github.com/) with:
+
+``` r
+
+# install.packages("pak")
+pak::pak("origami-dss/FibFreq")
+```
+
+## Example
+
+As an example we consider the sunspot data:
+
+``` r
+library(FibFreq)
+library(tidyverse)
+#> ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+#> ✔ dplyr     1.1.4     ✔ readr     2.1.5
+#> ✔ forcats   1.0.0     ✔ stringr   1.5.1
+#> ✔ ggplot2   3.5.2     ✔ tibble    3.3.0
+#> ✔ lubridate 1.9.4     ✔ tidyr     1.3.1
+#> ✔ purrr     1.1.0     
+#> ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+#> ✖ dplyr::filter() masks stats::filter()
+#> ✖ dplyr::lag()    masks stats::lag()
+#> ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
+sunspots <- as.vector(sunspot.month)
+# which has a sampling interval of 
+delta_t <- 1./12
+
+# As the time series is very noisy, we apply a 3-year moving average filter
+filtered_sunspots <- stats::filter(sunspots, rep(1./36,36))
+
+# This leads to leading and ending values NA. 
+# As the FibFreq library does not handle them, they have to be removed.
+smoothed_sunspots <- filtered_sunspots[!is.na(filtered_sunspots)]
+
+# we now search for the frequency of the best fitting sinusoidal function for frequencies between 0.0025 and 0.2 1./years
+freq_sin_model <- freq_fitted_sinusoidals(x = smoothed_sunspots, 
+                                          delta_t = delta_t, 
+                                          test_freqs = seq(0.0025, 0.2, by = 0.001))
+
+# and for the frequency based on the intervals between succeeding maxima:
+
+freq_M2M <- freq_max2max(smoothed_sunspots, delta_t = delta_t, span = 31)
+
+# and finally visualize the results:
+time = (1:length(smoothed_sunspots)) * delta_t
+timings_maxima_Max2Max = tibble(time = freq_M2M$maxima_sampled * delta_t, 
+                                sunspots = smoothed_sunspots[freq_M2M$maxima_sampled])
+sinusoidal_model = tibble(time = time, sunspots = freq_sin_model$model_ts)
+
+tibble(time = (1:length(smoothed_sunspots)) * delta_t, sunspots = smoothed_sunspots) %>%
+  ggplot(aes(x = time, y = sunspots)) +
+  geom_line() +
+  geom_point(data = timings_maxima_Max2Max, aes(x = time, y = sunspots), 
+             pch = 21, col = "darkred", bg = "darkred", alpha = 0.6, size = 3) +
+  geom_line(data = sinusoidal_model, aes(x = time, y = sunspots),  
+            col = "darkgreen", linewidth = 0.5, linetype = "dashed") +
+  labs( x = "Time [month]", y = " ", 
+        title = "Smoothed Sunspot Data with Identified Maxima and \nSinusoidal model") +
+  theme_minimal() +
+  theme(strip.text.y = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank()) 
+```
+
+<img src="man/figures/README-example-1.png" width="100%" /> The
+fundamental frequency estimate based on the `max2max` technique
+corresponds to a period of `1./freq_M2M$freq_max2max = 10.9` years which
+is very close to the expected 11-year cycle. The coefficient of
+variation of the intervals between successive maxima is
+`freq_M2M$c_v = 0.158` and refers to a moderate level of irregularity of
+the oscillation. The best fitting sinusoidal model leads to an estimate
+of the fundamental frequency of `freq_sin_model$freq_fitted = 0.0905`
+which is similar to the result of the `max2max` method. The
+corresponding explained variance `freq_sin_model$expl_var = 0.262`
+indicates that the sinusoidal model might be to simple.
+
+For the other functions that estimate the fundamental frequency and for
+more complex analysis of oscillatory time series, read the vignette.

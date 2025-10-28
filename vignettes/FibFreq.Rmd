@@ -1,0 +1,455 @@
+---
+title: "The R-package FibFreq with Examples"
+Autor: "Dr. Annette Witt (Origami Data Science Services)"
+Date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette 
+#output: markdown::pdf_vignette  
+vignette: >
+  %\VignetteIndexEntry{The R-package FibFreq with Examples}
+  %\VignetteEngine{knitr::knitr}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+This vignette introduces the **FibFreq** R package and illustrates its use through several application examples.
+**FibFreq** implements seven functions designed to estimate the fundamental frequency of univariate time series and includes methods for quantifying the uncertainty of these estimates.
+The package was originally developed for the analysis of electrocardiograms (ECGs) from fibrillating murine hearts, with the aim of characterizing these signals by their fundamental frequency.
+**FibFreq** is closely associated with the study "Unraveling Cardiac Arrhythmia Frequency: Comparative Analysis Using Time and Frequency Domain Algorithms" by Laura Diaz-Maue, Annette Witt, and Holger Nobach, published in [Journal Name].
+## First Steps 
+
+The library **FibFreq** can be installed and loaded as usual. We also define the first variables.
+
+```{r setup, message = FALSE}
+library(FibFreq)
+library(tidyverse)
+library(gridExtra)
+
+delta_t <- 0.001
+ecgs_selected  <- c(1, 37, 112, 13)
+ecgs <- MiceFibECGs[, ecgs_selected]
+colnames(ecgs) <- ecgs_selected
+
+x <-  MiceFibECGs[, 112]
+```
+
+## The Package **FibFreq**
+
+The aim of this package is to provide methods for estimating the fundamental frequency of oscillatory time series, along with measures of the associated uncertainty.
+These oscillations may be either regular or irregular, with the assumption that only a single fundamental frequency is present.
+The package includes seven functions that implement time series analysis techniques in both the time and frequency domains.
+None of the functions are designed to handle missing values, and the time-domain methods require smooth time series as input.
+In addition, the **FibFreq** package includes a dataset containing ECG recordings from fibrillating murine hearts.
+
+## The Included Data Set
+
+The package includes a dataset (MiceFibECGs) comprising 112 ECG recordings from fibrillating murine hearts.
+Each ECG time series represents a one-second signal sampled at 1 kHz, resulting in 1,000 data points per series.
+To eliminate power line interference at 50 Hz, all ECG signals were digitally low-pass filtered using a fifth-order Butterworth filter with a cutoff frequency of 45 Hz.
+Further details can be found in [XXX, YYY].
+
+
+Now we will plot four time series of the data set. 
+```{r plot_ECGs, include = TRUE, echo = TRUE, fig.width = 6, fig.height = 4}
+minitib <- function(no, i) {
+  tibble(no = rep(no, 1000), 
+         time = 1:1000, 
+         ecg = MiceFibECGs[,i], 
+         orig_no = rep(i, 1000)) }
+
+map2_dfr(1:length(ecgs_selected), ecgs_selected, minitib) -> data_fig_ecgs
+
+data_fig_ecgs_text <- data.frame(
+  no   = c(1,2,3,4),
+  label = paste("ECG No.",ecgs_selected))
+
+data_fig_ecgs_y_scales <- data.frame(
+  no   = c(1,1,2,2,3,3,4,4),
+  time = rep(0,8),
+  ecg = c(-0.1, 0.2, -0.03, 0.03, -0.03, 0.03, -0.01, 0.02))
+
+data_fig_ecgs %>%
+  ggplot(aes(x=time, y=ecg)) +
+  geom_line(col="darkblue", linewidth = 0.5) +
+  geom_blank(data = data_fig_ecgs_y_scales) +
+  facet_grid(rows = vars(no), scales = "free") +
+  geom_text(data = data_fig_ecgs_text, 
+            mapping = aes(x = 0, y = Inf, label = label, hjust = 0, vjust = 1 ), 
+            fontface = "bold", size = 3) +
+  labs( x = "Time [ms]", y = " ", title = "Examples of Murine ECGs") +
+  scale_x_continuous(limits= c(-02, 1010),  expand = c(0.0,0), breaks = (0:5)*200) +
+  theme_minimal() +
+  theme(strip.text.y = element_blank(),
+        panel.spacing.y = unit (1, "line"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+  )
+
+```
+
+All four time series exhibit oscillatory behavior, with an apparent increase in irregularity from top to bottom.
+Intuitively, one would expect a more reliable estimate of the fundamental frequency for the topmost ECG, and a less certain estimate for the ECG shown in the bottom panel.
+The **FibFreq** package provides four time-domain and three frequency-domain techniques for estimating the fundamental frequency of a time series.
+In addition, it outputs quantities that characterize the irregularity of the oscillations (see below).
+
+
+## Estimation of the Fundamental Frequency 
+Let us consider the ECG displayed in the third panel and explore the seven frequency estimation functions provided by the library **FibFreq**.
+We begin with the Max2Max technique, the fundamental time-domain method, and visualize its results.
+
+
+## Time Domain Techniques 
+### `freq_max2max`
+
+```{r freq_estimation_methods, fig.width = 6, fig.height = 4}
+freq_M2M <- freq_max2max(x, delta_t = 0.001)
+
+print(freq_M2M)
+
+timings_maxima_M2M <- tibble(time = freq_M2M$maxima_sampled, 
+                                ecg = x[freq_M2M$maxima_sampled])
+
+tibble(time = 1:1000, ecg = x) %>%
+  ggplot(aes(x = time, y = ecg)) +
+  geom_line(col="darkblue", linewidth = 0.5) +
+  geom_point(data = timings_maxima_M2M, aes(x = time, y = ecg), pch = 21, 
+             col = "darkred", bg = "darkred", alpha = 0.6, size = 3) +
+  labs( x = "Time [ms]", y = " ", 
+        title = "Murine ECG No. 112 \nwith Identified Maxima") +
+  scale_x_continuous(limits= c(-02, 1010),  expand = c(0.0,0), breaks = (0:5)*200) +
+  theme_minimal() +
+  theme(strip.text.y = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank()) -> Fig_ECG
+
+Intervals <- tibble( Interval_No = 1 : (length(freq_M2M$maxima_sampled) - 1), 
+                     Interval_Length = diff(freq_M2M$maxima_sampled))
+
+Intervals %>%
+  ggplot(aes(x = Interval_No, y = Interval_Length)) +
+  geom_errorbar(aes(x = Interval_No, ymin = 0, ymax = Interval_Length), 
+                col = "darkred") +
+  labs( y = "Interval Length [ms]", x = "Interval No.", 
+        title = "Time Intervals between \nSuccessive Maxima" ) +
+  theme_minimal() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank()) -> Fig_Return_Times
+
+grid.arrange(Fig_ECG, Fig_Return_Times, ncol = 2)
+
+```
+
+The result (`freq_M2M`) is  a list containing four elements. The first element is the estimated fundamental frequency ($f_{\text{M2M}} = 22.8$ Hz), followed by the coefficient of variation of the time intervals between the detected maxima. The third element is the number of identified maxima, and the fourth is a list of their corresponding indices.
+The graphical representation of the ECG time series alongside the identified maxima indicates that the peak detection algorithm—using **FibFreq**'s default parameters—performs effectively. The plot of time intervals between successive maxima shows 22 intervals, with lengths ranging from 19 ms to 64 ms.
+The variability of these interval lengths is quantified by the coefficient of variation $c_v = \sigma / \mu$, where $\sigma$ is the standard deviation and $\mu$ the mean of the interval lengths. In the ideal case of perfectly regular oscillations (i.e., equally spaced maxima), all intervals would be of equal length, leading to $\sigma = 0$ and thus $c_v = 0$. For the current ECG time series, the intervals vary in length, resulting in a positive coefficient of variation ($c_v = 0.26$), which indicates an intermediate degree of irregularity in the oscillatory pattern.
+
+What about other time-domain techniques, such as those based on threshold crossings or peak detection methods commonly employed in defibrillators? How do they compare in terms of robustness and sensitivity to irregularities?
+
+### `freq_ICD` and `freq_threshold_crossing`
+
+```{r freq_TD_methods, fig.width = 6, fig.height = 4}
+freq_M2M <- freq_max2max(x, delta_t = 0.001)
+
+freq_Defi <- freq_ICD(x, delta_t = delta_t, thresh_min = 0.001)
+
+thresh = -0.001
+freq_TC <- freq_threshold_crossing(x, delta_t = delta_t, thresh = thresh)
+
+timings_max_M2M <- tibble(time = freq_M2M$maxima_sampled, 
+                                ecg = x[freq_M2M$maxima_sampled])
+
+timings_max_Defi <- tibble(time = freq_Defi$maxima_sampled, 
+                            ecg = x[freq_Defi$maxima_sampled])
+
+timings_TC <- tibble(time = freq_TC$threshold_crossings, 
+                    ecg = rep(thresh, length(freq_TC$threshold_crossings)))
+
+tibble(time = 1:1000, ecg = x) %>%
+  ggplot(aes(x = time, y = ecg, color = "ecg")) +
+  geom_line(col="darkblue", linewidth = 0.5) +
+  geom_point(data = timings_max_M2M, aes(x = time, y = ecg), 
+             pch = 21, col = "darkred", bg = "darkred", alpha = 0.4, size = 4, 
+             show.legend = TRUE) +
+  geom_point(data = timings_max_Defi, aes(x = time, y = ecg), 
+             pch = 23, col = "darkgreen", bg = "darkgreen", alpha = 0.8, size = 2, 
+             show.legend = TRUE) +
+  geom_point(data = timings_TC, aes(x = time, y = ecg), 
+             pch = 25, col = "grey30", bg = "grey30", size = 2, alpha = 0.4, 
+             show.legend = TRUE) +
+  labs( x = "Time [ms]", y = " ", title = "Murine ECG No. 112 with Identified Maxima/ Threshold Crossings") +
+  scale_x_continuous(limits= c(-02, 1010),  expand = c(0.0,0), breaks = (0:5)*200) +
+  theme_minimal() +
+  theme(strip.text.y = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank()) 
+```
+
+The ICD technique (green diamonds) identifies fewer maxima compared to the Max2Max method (red circles). This difference arises from the inclusion of a refractory period in the ICD algorithm, which prevents the detection of closely spaced peaks. Similarly, with a threshold set at –0.001, the threshold crossing method (grey triangles) also yields fewer detected events.
+As a result, the corresponding frequency estimates—$f_{\text{Defi}} = 20.7$ Hz for the ICD method and $f_{\text{TC}} = 19.7$ Hz for the threshold crossing method—are both lower than the frequency estimated by the Max2Max algorithm ($f_{\text{M2M}} = 22.8$ Hz). Additionally, the coefficients of variation differ between methods, with $c_v = 0.20$ for the ICD technique and $c_v = 0.13$ for the threshold crossing approach. These differences reflect variations in sensitivity to oscillation irregularity and peak detection criteria among the methods.
+
+The fourth time domain technique is the frequency of the best fitting sinusoidal function with respect to a set of test frequencies:
+
+### `freq_fitted_sinusoidals`
+
+```{r best_fitting_sinusoid, fig.width = 6, fig.height = 4}
+freq_sin <- freq_fitted_sinusoidals(x, delta_t = delta_t, test_freqs = seq(10, 35, by = 0.005))
+
+model_fitted_sin <-  tibble(time = 1:1000,  ecg = freq_sin$model_ts)
+tibble_ecg <- tibble(time = 1:1000, ecg = x) 
+
+tibble_ecg %>%
+  ggplot(aes(x = time, y = ecg)) +
+  geom_line(col="darkblue", linewidth = 0.5) +
+  geom_line(data = model_fitted_sin, lty = "dashed", col = "brown", linewidth = 0.5 ) +
+  labs( x = "Time [ms]", y = " ", title = "Murine ECG No. 112 with Sinusoidal Model") +
+  scale_x_continuous(limits= c(-02, 1010),  expand = c(0.0,0), breaks = (0:5)*200) +
+  theme_minimal() +
+  theme(strip.text.y = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank()) 
+
+```
+
+For each frequency in `test_freqs`, a sinusoidal function is fitted to the time series, and the goodness of fit is quantified by the explained variance, $\rho^2$, which represents the proportion of the data variance accounted for by the model.
+The frequency corresponding to the highest $\rho^2$ value is considered the best fit.
+In the figure, this best-fitting sinusoid is shown as a brown dashed line, which aligns well in phase with the fibrillation time series.
+The fitted frequency is $f_{\text{fitted sin}} = 19.385$ Hz, with an explained variance of $\rho^2 = 0.50$.
+Notably, the amplitudes — especially those of the maxima and minima — differ between the model and the actual data.
+For comparison, in the case of a perfectly sinusoidal ECG, both curves would coincide and the explained variance was $\rho^2 = 1.0$.
+
+## Frequency Domain Techniques
+### `freq_argmax_periodogram`,  `freq_adapted_variable_period` and `freq_Lorentz_fit`
+
+Frequency domain techniques are based on the power spectrum. A popular and simple estimator of the power spectrum is the 
+Periodogram. We begin our analysis with the computation of the periodogram and with the identification of the argmax frequency, 
+i.e., the frequency $freq_{\text{MaxP}}$ that corresponds to the maximum value of the periodogram.
+
+```{r Periodogram_Analysis, fig.width = 6, fig.height = 4}
+P <- as_tibble(Periodogram(x, delta_t = delta_t))
+
+freq_MaxP <- freq_argmax_periodogram(x, delta_t = 0.001)
+
+P_max <- P %>% filter(Frequency == freq_MaxP$freq_argmax_periodogram)
+
+P %>%
+  #  mutate(freq = as.numeric(freq)) %>%
+  filter(Frequency > 1 & Frequency < 45) %>%
+  ggplot(aes(x = Frequency)) +
+  geom_linerange(aes(ymin = 0, ymax = PSD), col = "darkblue", linewidth = 1.5) +
+  geom_point(data = P_max, aes(y = PSD), bg = "brown", col = "brown", pch = 23, cex = 3) +
+  geom_text( data = P_max, aes(y = PSD), label = "Maximum Power",
+    hjust = - 0.15, col = "brown", cex = 3) +
+  scale_x_continuous(limits = c(0, 50)) +
+  labs(x = "Frequency [Hz]", y = "Power", title = "Murine ECG No. 112") +
+  theme_minimal() +
+  theme(
+    strip.text.y = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank()
+  )
+
+```
+\
+Our analysis resulted in `freq_MaxP = 19 Hz`,  which corresponds to an explained variance of $\rho^2 = 0.35$.
+Now we continue with the adaptive variable period technique and with the Lorentz fit:
+
+
+```{r Frequency_domain_techniques, fig.width = 6, fig.height = 4}
+freq_MaxP <- freq_argmax_periodogram(x,
+                                     delta_t = delta_t,
+                                     f_min = 1,
+                                     f_max = 45)
+freq_AVP <- freq_adapted_variable_period(x, delta_t)
+freq_Lorentz <- freq_Lorentz_fit(x,
+                                 delta_t = delta_t,
+                                 f_min = 1,
+                                 f_max = 45)
+
+as_tibble(freq_Lorentz$Lorentz_model) %>%
+  ggplot(aes(x = freq)) +
+  geom_linerange( aes(ymin = 0, ymax = FourierAmp), col = "steelblue3", linewidth = 1.5) +
+  geom_line( aes(y = LorentzFit), col = "darkorange", linewidth = 1, linetype = "dashed") +
+  labs(x = "Frequency [Hz]", y = "Fourier Amplitudes/ Lorentz Model", title = "Murine ECG No. 112") +
+  theme_minimal() +
+  theme(
+    strip.text.y = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank()
+  )
+```
+\
+The adaptive variable period technique overcomes to some extend the coarse frequency resolution of the periodogram and results 
+in a frequency estimate of $f_{\text{ADP}} = 19.4$ Hz and an explained variance of $\rho^2 = 0.50$. 
+Next, we applied a Lorentzian fit to the Fourier amplitudes. Since the ECG time series is band-pass filtered, the corresponding corner frequencies must be specified as f_min and f_max parameters in the freq_Lorentz_fit function to avoid fitting errors. 
+The results which are visualized in the Figure above lead to a fibrillation frequency estimate of $f_{\text{Lorentz}} =19.7$ Hz along with a Lorentz scale parameter of 
+$\sigma_{\text{Lorentz}} =2.2$ Hz.
+
+In summary, we estimated the fibrillation frequency of the 112th ECG from the dataset using seven different frequency estimation methods, obtaining values ranging from 19 to 23 Hz.
+Three of these methods quantify the goodness of fit using the explained variance ($\rho^2$), which reached up to 0.50—indicating that the sinusoidal model accounts for 50% of the variance in the ECG signal.
+Time-domain methods further characterize the irregularity of oscillations through the coefficient of variation of time intervals between successive maxima or threshold crossings.
+The resulting coefficients, ranging from 0.13 to 0.25, suggest a moderate level of irregularity in the oscillatory pattern. This interpretation is supported by the Lorentz scale parameter of 2.2 Hz, which exceeds 10% of the corresponding Lorentz frequency. 
+
+Now we compute the fibrillation frequency based on the number and location of maximum values of the four ECGs presented in the first Figure. For the ICD-technique, the threshold is set to the 60th percentile of the signal.
+
+```{r freq_Time_Domain_ecgs}
+ecgs <- MiceFibECGs[, ecgs_selected]
+colnames(ecgs) = ecgs_selected
+
+fn <- function(x, delta_t = delta_t) {
+  thresh <- quantile (x, 0.6)
+  res_ICD <-  freq_ICD(x, delta_t, thresh_min = thresh)
+  names(res_ICD)[2] <- "c_v_ICD"
+  res_Max2Max <- freq_max2max(x, delta_t = delta_t)
+  names(res_Max2Max)[2] <- "c_v_M2M"
+  
+  return (c(res_ICD[1:2], res_Max2Max[1:2]))
+}
+
+options(pillar.sigfig = 3)
+as_tibble(ecgs) %>%
+  map_df(~ fn(.x, delta_t = delta_t)) %>%
+  mutate (ECG_ID = ecgs_selected, .before = freq_ICD) %>%
+  relocate(freq_max2max, .before = c_v_ICD)
+
+```
+
+The first column of the tibble contains the IDs of the murine ECGs, followed by the frequency estimates obtained using the ICD technique in the second column, and the Max2Max apporach in the third column. Th forth and the fifth column containthe corresponding coefficients of variation ($c_v$) for each method.
+The increase in coefficients of variation from top to bottom reflects the growing irregularity of the four ECG signals. Notably, the $c_v$ of the first ECG is close to zero, indicating a highly regular signal and a precise frequency estimate.
+Next, we proceed to compute frequency estimates using frequency-domain methods for the four selected ECGs.
+
+
+```{r freqs_Spectral_techniques_ECGs}
+fn <- function(x, delta_t = delta_t, f_min = 1, f_max = 45) {
+  res_MaxP <-  freq_argmax_periodogram(x, delta_t, f_min = f_min, f_max = f_max)
+  names(res_MaxP)[1] <- "freq_MaxP"
+  names(res_MaxP)[3] <- "ExpVar_MaxP"
+  res_AVP <- freq_adapted_variable_period(x, delta_t = delta_t)
+  names(res_AVP)[3] <- "ExpVar_AVP"
+  res_Lorentz <- freq_Lorentz_fit(x, delta_t = delta_t, f_min = f_min, f_max = f_max)
+  names(res_Lorentz)[2] <- "scale_Lorentz"
+  
+  return (c(res_MaxP[c(1,3)], res_AVP[c(1,3)], res_Lorentz[1:2]))
+}
+
+
+options(pillar.sigfig = 3)
+as_tibble(ecgs) %>%
+  map_df(~ fn(.x, delta_t = delta_t)) %>%
+  mutate (ECG_ID = ecgs_selected, .before = freq_MaxP)
+
+```
+
+
+For the first three ECGs, the three frequency estimates are very similar. In contrast, the fourth and most irregular ECG exhibits frequencies ranging from 13.8 to 17.9 Hz, depending on the method applied. The explained variance, $\rho^2$, quantifies how well the signal can be modeled by a sinusoidal function. For the first, highly regular ECG, $\rho^2$ approaches the maximum value of 1, while lower values for the other ECGs indicate deviations from the sinusoidal model, likely due to irregular oscillations.
+The Lorentz method fits a Lorentzian function to the Fourier amplitudes, with the Lorentz scale parameter describing the width of the Lorentzian peak. We observe Lorentz scale values below 1 Hz for the first two ECGs, followed by markedly increased values for the latter two.
+In summary, the frequency-domain methods reflect a progressive increase in irregularity across the four ECGs, evidenced by decreasing explained variances ($\rho^2$) and increasing Lorentz scale parameters.
+
+Since characterizing time series by their fundamental frequency is not limited to fibrillation data, we present a brief analysis of the sunspot dataset using tools from the **FibFreq** package.
+
+## Fundamental Frequency Analysis of the Monthly Sunspot Data
+
+We begin with loading the sunspot data set and smoothing it:
+
+```{r loading_sunspots}
+# We load the monthly  sunspot data set
+sunspots <- as.vector(sunspot.month)
+
+# which has a sampling interval of 
+delta_t <- 1./12
+
+# As the time series is very noisy, we apply a 3-year moving average filter
+filtered_sunspots <- stats::filter(sunspots, rep(1./36,36))
+
+# This leads to leading and ending values NA. 
+# As the FibFreq library does not handle them, they have to be removed.
+smoothed_sunspots <- filtered_sunspots[!is.na(filtered_sunspots)]
+
+#names(smoothed_sunspots) <-"sunspots"
+```
+
+The frequency estimation is started by applying  the `freq_max2max` technique:
+
+```{r ana_sunspots_max2max}
+# The parameters of the maximum identification function have to be adjusted 
+
+freq_M2M <- freq_max2max(smoothed_sunspots, delta_t = delta_t, span = 31)
+
+print(freq_M2M[1:2])
+```
+The fundamental frequency `freq_M2M$freq_max2max` corresponds to a period of `1./freq_M2M$freq_max2max = `r format(1./freq_M2M$freq_max2max, digits = 3) ``
+years which is very close to the expected 11-year cycle. 
+The coefficient of variation of the intervals between successive maxima is
+ `freq_M2M$c_v = `r format(freq_M2M$c_v, digits = 3) ``
+and refers to a moderate level of irregularity of the oscillation.
+Let's continue with the best fitting sinusoidal function:
+The best fitting sinusoidal model
+
+```{r sin_fit_to_sunspots}
+freq_sin_model <- freq_fitted_sinusoidals(x = smoothed_sunspots, 
+                                          delta_t = delta_t, 
+                                          test_freqs = seq(0.0025, 0.2, by = 0.001))
+```
+
+has a fundamental frequency of
+`freq_sin_model$freq_fitted = `r format(freq_sin_model$freq_fitted, digits = 3) ``
+which is similar to the result of the `max2max` method.
+The corresponding explained variance
+`freq_sin_model$expl_var = `r format(freq_sin_model$expl_var, digits = 3) ``
+indicates that the sinusoidal model might be to simple.
+Now we are going to visualize the time series and the analysis we performed so far: 
+
+```{r sunspot data vizualizations,  fig.width = 6, fig.height = 4}
+time = (1:length(smoothed_sunspots)) * delta_t
+timings_maxima_Max2Max = tibble(time = freq_M2M$maxima_sampled * delta_t, 
+                                sunspots = smoothed_sunspots[freq_M2M$maxima_sampled])
+sinusoidal_model = tibble(time = time, sunspots = freq_sin_model$model_ts)
+
+tibble(time = (1:length(smoothed_sunspots)) * delta_t, sunspots = smoothed_sunspots) %>%
+  ggplot(aes(x = time, y = sunspots)) +
+  geom_line() +
+  geom_point(data = timings_maxima_Max2Max, aes(x = time, y = sunspots), 
+             pch = 21, col = "darkred", bg = "darkred", alpha = 0.6, size = 3) +
+  geom_line(data = sinusoidal_model, aes(x = time, y = sunspots),  
+            col = "darkgreen", linewidth = 0.5, linetype = "dashed") +
+  labs( x = "Time [month]", y = " ", 
+        title = "Smoothed Sunspot Data with Identified Maxima and \nSinusoidal model") +
+  theme_minimal() +
+  theme(strip.text.y = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank()) 
+```
+
+Finally we analyse the spectral properties of the smoothed sunspot time series:
+
+```{r Spectral_Analysis_SunSpots}
+
+# The frequency domain techniques are now applied and summarized in a table.
+fn <- function(x, delta_t = delta_t, f_min = 0.01, f_max = 0.5) {
+  res_MaxP <-  freq_argmax_periodogram(x, delta_t, f_min = f_min, f_max = f_max)
+  names(res_MaxP)[1] <- "freq_MaxP"
+  names(res_MaxP)[3] <- "ExpVar_MaxP"
+  res_AVP <- freq_adapted_variable_period(x, delta_t = delta_t)
+  names(res_AVP)[3] <- "ExpVar_AVP"
+  res_Lorentz <- freq_Lorentz_fit(x, delta_t = delta_t, f_min = f_min, f_max = f_max)
+  names(res_Lorentz)[2] <- "scale_Lorentz"
+  
+  return (c(res_MaxP[c(1,3)], res_AVP[c(1,3)], res_Lorentz[1:2]))
+}
+
+options(pillar.sigfig = 3)
+as_tibble(smoothed_sunspots) %>%
+  map_df(~ fn(.x, delta_t = delta_t))
+```
+
+The spectral analysis techniques yielded three closely aligned frequency estimates ranging from 0.091 to 0.093 yr$^{-1}$ corresponding to average periods between 10.7 and 11.0 yr.
+All additional parameters indicate that the underlying oscillation is moderately irregular and/or deviates from a sinusoidal model. The results obtained from spectral methods are consistent with those derived from time-domain techniques.
+
+This text was optimized using chatGPT (GPT-4.1-mini model).
