@@ -7,16 +7,17 @@
 
 <!-- badges: end -->
 
-The goal of the package FibFreq is to provide functions that compute the
-fundamental frequency of oscillatory time series. Examples of such time
-series include ECGs of fibrillating hearts, the sunspot data or
-recordings of respiratory activities. These functions comprise time and
-frequency domain techniques. The time domain techniques require fairly
-smooth time series. The package Fibrfreq does also include a data set
-with 112 of such murine ECGs. **FibFreq** is closely associated with the
-study “Unraveling Cardiac Arrhythmia Frequency: Comparative Analysis
-Using Time and Frequency Domain Algorithms” by Laura Diaz-Maue, Annette
-Witt, and Holger Nobach, published in \[Journal Name\].
+The **FibFreq** package provides tools for estimating the fundamental
+frequency of oscillatory time series. Typical applications include
+electrocardiograms (ECGs) from fibrillating hearts, sunspot activity
+records, and climate oscillations such as El Niño. **FibFreq**
+implements both time-domain and frequency-domain methods, yielding not
+only frequency estimates but also quantitative measures of oscillation
+regularity. In addition, the package includes a dataset comprising 112
+murine ECG recordings. **FibFreq** accompanies the study “Unraveling
+Cardiac Arrhythmia Frequency: Comparative Analysis Using Time and
+Frequency Domain Algorithms” by Laura Diaz-Maue, Annette Witt, and
+Holger Nobach, published in \[Journal Name\].
 
 ## Installation
 
@@ -39,7 +40,7 @@ library(tidyverse)
 #> ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
 #> ✔ dplyr     1.1.4     ✔ readr     2.1.5
 #> ✔ forcats   1.0.0     ✔ stringr   1.5.1
-#> ✔ ggplot2   3.5.2     ✔ tibble    3.3.0
+#> ✔ ggplot2   4.0.0     ✔ tibble    3.3.0
 #> ✔ lubridate 1.9.4     ✔ tidyr     1.3.1
 #> ✔ purrr     1.1.0     
 #> ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
@@ -87,17 +88,19 @@ tibble(time = (1:length(smoothed_sunspots)) * delta_t, sunspots = smoothed_sunsp
         panel.grid.minor.y = element_blank()) 
 ```
 
-<img src="man/figures/README-example-1.png" width="100%" /> The
-fundamental frequency estimate based on the `max2max` technique
-corresponds to a period of `1./freq_M2M$freq_max2max = 10.9` years which
-is very close to the expected 11-year cycle. The coefficient of
-variation of the intervals between successive maxima is
-`freq_M2M$c_v = 0.158` and refers to a moderate level of irregularity of
-the oscillation. The best fitting sinusoidal model leads to an estimate
-of the fundamental frequency of `freq_sin_model$freq_fitted = 0.0905`
-which is similar to the result of the `max2max` method. The
-corresponding explained variance `freq_sin_model$expl_var = 0.262`
-indicates that the sinusoidal model might be to simple.
+<img src="man/figures/README-example-1.png" width="80%" />
+
+The estimated fundamental frequency obtained using the `max2max`
+technique corresponds to a period of `1./freq_M2M$freq_max2max = 10.9`
+years which is very close to the expected 11-year cycle. The coefficient
+of variation of the intervals between successive maxima,
+`freq_M2M$c_v = 0.158`, indicates a moderate level of irregularity of
+the oscillation. The best fitting sinusoidal model yields a fundamental
+freqeuncy estimate of the fundamental frequency of
+`freq_sin_model$freq_fitted = 0.0905` which, which closely agrees with
+the result from the `max2max` method (0.0914). The corresponding
+explained variance `freq_sin_model$expl_var = 0.262` suggests that the
+sinusoidal model might be too simple.
 
 For the other functions that estimate the fundamental frequency and for
-more complex analysis of oscillatory time series, read the vignette.
+a more complex analysis of oscillatory time series, read the vignette.

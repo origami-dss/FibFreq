@@ -1,6 +1,6 @@
 Package: FibFreq
 Title: An R package for Computing the Fundamental Frequency of Time Series
-Version: 0.0.9.0
+Version: 0.9.0.0
 Authors@R: c(
     person("Annette", "Witt", email = "Annette.Witt@posteo.de", role = c("cre", "aut")),
     person("Laura", "Diaz-Maue", email = "Laura.Diaz@mpids.mpg.de", role = "aut"),

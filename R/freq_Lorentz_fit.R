@@ -60,8 +60,8 @@ freq_Lorentz_fit <- function(x,
                              welch_window = FALSE,
                              f_min = 0,
                              f_max = Inf,
-                             control = stats::nls.control(scaleOffset = 1),
-                             algorithm = "plinear")
+                             control = stats::nls.control(maxiter = 100),
+                             algorithm = "default")
 {
   if (!is.vector(x) |
       !is.numeric(x) |
@@ -124,15 +124,17 @@ freq_Lorentz_fit <- function(x,
 
     ww <- which.max(Amp)
     argmax_freq <-  freq[ww[1]]
-    sigma_squared <- sum(Amp * (freq - argmax_freq)^2 / sum(Amp))
+    mean_freq <-   sum(Amp * freq ) / sum(Amp)
+    sigma_squared <- sum(Amp * (freq - mean_freq)^2) / sum(Amp)
     sigma_start <- sqrt(sigma_squared)
+    if (sigma_start < delta_f) sigma_start <- delta_f
 
   options(show.error.messages = FALSE)
 
    result_fitting <- try({stats::nls(
       Amp ~ sigma / ((freq - Lorentz_freq)^2 + sigma^2),
       data = PP,
-      start = list(Lorentz_freq = argmax_freq, sigma = sigma_start),
+      start = list(Lorentz_freq = mean_freq, sigma = sigma_start),
       control = control,
       algorithm = algorithm)},
       silent = TRUE)
@@ -140,7 +142,22 @@ freq_Lorentz_fit <- function(x,
     options(show.error.messages = TRUE)
     if (inherits(result_fitting,"try-error")) {
       msg = geterrmessage()
-      stop( paste0("Are 'f_min', 'f_max', 'delta_t' set correctly? Otherwise check the parameters of the 'nls' algorithm! \n ", msg))
+      warning( paste0("Are 'f_min', 'f_max', 'delta_t' set correctly? \n ", msg,"\n plinear algoritm is tried now." ))
+
+      options(show.error.messages = FALSE)
+      result_fitting <- try({stats::nls(
+        Amp ~ sigma / ((freq - Lorentz_freq)^2 + sigma^2),
+        data = PP,
+        start = list(Lorentz_freq = argmax_freq, sigma = sigma_start),
+        control = control,
+        algorithm = "plinear")},
+        silent = TRUE)
+      options(show.error.messages = TRUE)
+
+            if (inherits(result_fitting,"try-error")) {
+        msg = geterrmessage()
+        error( paste0("p_linear algorithm failed: ", msg ))
+            }
       }
 
 
