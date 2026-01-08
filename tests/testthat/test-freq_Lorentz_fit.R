@@ -103,18 +103,16 @@ test_that("freq_Lorentz_fit throughs an error in case of the interval [f_min, f_
 
 test_that("freq_Lorentz_fit returns an array of length 5", {
 
-  expect_length(freq_Lorentz_fit(rep(c(-1,1), 500),  delta_t = 500), 5)
-
-#  expect_length(freq_Lorentz_fit(rep(c(-1,1), 500), delta_t = 0.1, welch_window = TRUE), 5)
-
+  expect_length(freq_Lorentz_fit(sin(0.05 * 2*pi * (1:100)),  delta_t = 500), 6)
+  expect_length(freq_Lorentz_fit(rep(c(-1,1), 500), delta_t = 0.1, welch_window = TRUE), 6)
 })
 
 test_that("freq_Lorentz returns correct output", {
 
   x1 <- sin(0.05 * 2*pi * (1:100))
   x2 <- sin(0.20 * 2*pi * (1:100))
-  expect_equal(freq_Lorentz_fit(x1)$freq_Lorentz,  0.05)
-  expect_equal(freq_Lorentz_fit(x2)$freq_Lorentz, 0.20 )
+  expect_equal(freq_Lorentz_fit(x1)$freq_Lorentz,  0.05, tolerance = 0.0001)
+  expect_equal(freq_Lorentz_fit(x2)$freq_Lorentz, 0.20, tolerance = 0.0001 )
   expect_equal(freq_Lorentz_fit(x2, welch_window = TRUE)$freq_Lorentz, 0.20, tolerance = 0.0001 )
 })
 

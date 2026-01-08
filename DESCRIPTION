@@ -22,6 +22,7 @@ Depends:
 LazyData: true
 Imports: 
     splus2R,
+    gslnls,
     stats
 Suggests: testthat, 
     utils,

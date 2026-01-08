@@ -27,7 +27,7 @@ a named list containing
 (iv) the explained variance.
 }
 \description{
-This function computes the freqeuncy of a time series based on
+This function computes the frequency of a time series based on
 the adapted variable period technique (see: ...).
 In contrast to the direct evaluation of the power spectrum,
 this method is considering cycle lengths which correspond to an

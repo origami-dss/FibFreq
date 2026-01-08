@@ -1,6 +1,6 @@
 #' Frequency Estimation Using the Adapted Variable Period Technique
 #'
-#' @description This function computes the freqeuncy of a time series based on
+#' @description This function computes the frequency of a time series based on
 #' the adapted variable period technique (see: ...).
 #' In contrast to the direct evaluation of the power spectrum,
 #' this method is considering cycle lengths which correspond to an

@@ -10,8 +10,9 @@ freq_Lorentz_fit(
   welch_window = FALSE,
   f_min = 0,
   f_max = Inf,
-  control = stats::nls.control(scaleOffset = 1),
-  algorithm = "plinear"
+  control = gslnls::gsl_nls_control(maxiter = 500, ftol = 1e-05, gtol = 1e-05, xtol =
+    1e-05, h_df = 1e-05),
+  algorithm = "lm"
 )
 }
 \arguments{
@@ -28,7 +29,7 @@ freq_Lorentz_fit(
 \item{control}{an optional list of control settings for the nonlinear least-squares algorithm (i.e., the function nls).
 See \link[stats]{nls.control} for the names of the settable control values and their effect.}
 
-\item{algorithm}{character string specifying the algorithm to use. The default is "plinear".  See   \link[stats]{nls} for other options.}
+\item{algorithm}{character string specifying the algorithm to use. The default is "lm".  See   \link[stats]{nls} for other options.}
 }
 \value{
 a named list containing the following components:
@@ -38,17 +39,20 @@ a named list containing the following components:
 \item \code{max_Lorentz_fit} - the  maximum value of the fitted Lorentzian.
 \item \code{expl_var} -  the  explained variance of the fitted Lorentzian.
 \item \code{Lorentz_model} -  a named list with the amplitude spectrum and the fitted model.
+\item \code{WARN} -  warning of the gslnls::gsl_nls - algorithm, NULL in case of no warning.
 }
 }
 \description{
-This function is fitting a Lorentz function to the amplitudes of the Fourier transform (not to the Power spectrum!) of a time series.
+This function is fitting a Lorentzian to the Fourier amplitudes of the given time series.
+The parameters of the Lorentzian are returned, as well as the Lorentzian model.
+The Levenberg-Marquardt  algorithm provided by the gslnls-library  is applied for performing the nonlinear least squares fit.
+A multi-start algorithm is used with the ranges of the start parameters set to the minimimum and maximum frequency of the Fourier amplitudes
+following the given parameters f_min and f_max.
 }
 \examples{
-# Let's consider two synthetic time series and an example from the attached data set
 x1 = sin(0.11 * 2*pi *(1:100))
 x2 = sin(0.11 * 2*pi *(1:100)) + 1.01 * sin(0.17 * 2*pi * (1:100))
 ecg_6  <- MiceFibECGs[,6]
-
 freq_Lorentz_fit(x1)
 # For the following few examples we will focus on the fitted parameters and the explained variance
 freq_Lorentz_fit(x2)[1:4]
@@ -67,13 +71,15 @@ res[1:2]
 # Vizualization of the fitted Lorentz model:
 xlab = "Frequency (Hz)"
 ylab = "Fourier Amplitude"
-plot(res$Lorentz_model$freq, res$Lorentz_model$FourierAmp, xlab = xlab, ylab = ylab, pch = 3)
-lines(res$Lorentz_model$freq, res$Lorentz_model$LorentzFit, col = "red")
+plot(res$Lorentz_model$Frequency, res$Lorentz_model$Fourier_Amps, xlab = xlab, ylab = ylab, pch = 3)
+lines(res$Lorentz_model$Frequency, res$Lorentz_model$modelled_Fourier_Amps, col = "red")
 
 legend("topright" , c("Fourier Amplitudes", "Lorentz Fit"),
 col = c("black","red"), lty = c(0,1), pch = c(3,NA))
 
 }
 \references{
-{ Diaz-Maue L, Witt A, Nobach H: \emph{Unraveling Cardiac Arrhythmia Frequency, Comparative Analysis Using Time and Frequency Domain Algorithms}. submitted to Frontiers in Signal Processing (2025)}
+{ Diaz-Maue L, Witt A, Nobach H: Unraveling Cardiac Arrhythmia Frequency, Comparative Analysis Using Time and Frequency Domain Algorithms. submitted to Frontiers in Signal Processing (2025)}
+
+{ M. Galassi et al., GNU Scientific Library Reference Manual (3rd Ed.), 2009, ISBN 0954612078. }
 }

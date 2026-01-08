@@ -15,7 +15,6 @@ colnames(LAURAS_DATA)=substring(colnames(LAURAS_DATA), 10,16)
 
 MiceFibECGs <- LAURAS_DATA
 
-#for (i in 1:(dim(MiceFibECGs))[2]) MiceFibECGs[,i] <- notch_50_l1000(MiceFibECGs[,i])
 for (i in 1:(dim(MiceFibECGs))[2])
   {
   MiceFibECGs[,i] <- MiceFibECGs[,i] - mean(MiceFibECGs[,i])

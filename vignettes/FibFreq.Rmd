@@ -110,7 +110,7 @@ We begin with the Max2Max technique, the fundamental time-domain method, and vis
 ### `freq_max2max`
 
 ```{r freq_estimation_methods, fig.width = 6, fig.height = 4}
-freq_M2M <- freq_max2max(x, delta_t = 0.001)
+freq_M2M <- freq_max2max(x, delta_t = delta_t)
 
 print(freq_M2M)
 
@@ -156,7 +156,7 @@ What about other time-domain techniques, such as those based on threshold crossi
 ### `freq_ICD` and `freq_threshold_crossing`
 
 ```{r freq_TD_methods, fig.width = 6, fig.height = 4}
-freq_M2M <- freq_max2max(x, delta_t = 0.001)
+freq_M2M <- freq_max2max(x, delta_t = delta_t)
 
 freq_Defi <- freq_ICD(x, delta_t = delta_t, thresh_min = 0.001)
 
@@ -235,7 +235,7 @@ i.e., the frequency $freq_{\text{MaxP}}$ that corresponds to the maximum value o
 ```{r Periodogram_Analysis, fig.width = 6, fig.height = 4}
 P <- as_tibble(Periodogram(x, delta_t = delta_t))
 
-freq_MaxP <- freq_argmax_periodogram(x, delta_t = 0.001)
+freq_MaxP <- freq_argmax_periodogram(x, delta_t = delta_t)
 
 P_max <- P %>% filter(Frequency == freq_MaxP$freq_argmax_periodogram)
 
@@ -267,16 +267,19 @@ freq_MaxP <- freq_argmax_periodogram(x,
                                      delta_t = delta_t,
                                      f_min = 1,
                                      f_max = 45)
-freq_AVP <- freq_adapted_variable_period(x, delta_t)
+freq_AVP <- freq_adapted_variable_period(x, delta_t = delta_t)
 freq_Lorentz <- freq_Lorentz_fit(x,
                                  delta_t = delta_t,
                                  f_min = 1,
                                  f_max = 45)
 
-as_tibble(freq_Lorentz$Lorentz_model) %>%
-  ggplot(aes(x = freq)) +
-  geom_linerange( aes(ymin = 0, ymax = FourierAmp), col = "steelblue3", linewidth = 1.5) +
-  geom_line( aes(y = LorentzFit), col = "darkorange", linewidth = 1, linetype = "dashed") +
+tibble_Lorentz_plot <- as_tibble(freq_Lorentz$Lorentz_model)
+
+
+tibble_Lorentz_plot %>%
+  ggplot(aes(x = Frequency)) +
+  geom_linerange( aes(ymin = 0, ymax = Fourier_Amps), col = "steelblue3", linewidth = 1.5) +
+  geom_line( aes(y = modelled_Fourier_Amps), col = "darkorange", linewidth = 1, linetype = "dashed") +
   labs(x = "Frequency [Hz]", y = "Fourier Amplitudes/ Lorentz Model", title = "Murine ECG No. 112") +
   theme_minimal() +
   theme(
@@ -284,6 +287,7 @@ as_tibble(freq_Lorentz$Lorentz_model) %>%
     panel.grid.major.y = element_blank(),
     panel.grid.minor.y = element_blank()
   )
+
 ```
 \
 The adaptive variable period technique overcomes to some extend the coarse frequency resolution of the periodogram and results 
