@@ -7,6 +7,8 @@
 #' @param x a non-infinite real-valued numeric vector containing the values of the time series
 #' @param delta_t  a real value, the sampling time, default value is delta_t = 1.0
 #' @param ...  optional arguments to be passed to the function splus2R::peaks. Otherwise span = 11, strict = TRUE and endbehavior = 0 are used.
+#' @param .warn Logical; if TRUE (default), messages are shown for edge cases.
+#'
 #'
 #' @return  a named list containing the following components:
 #' \itemize{
@@ -33,101 +35,94 @@
 #' # Changing optional parameters of splus2R::peaks can change the result
 #' freq_max2max(ecg_6, delta_t = 0.001, span = 35)
 
-freq_max2max <- function(x, delta_t = 1.0, ...)
+freq_max2max <- function(x, delta_t = 1, ..., .warn = TRUE)
 {
-  if (!is.vector(x) |
-      !is.numeric(x) |
-      any(is.na(x)) |
-      any(!is.finite(x)))
-    stop("'x' must be non-infinite real-valued numeric vector")
-  if (length(x) == 0L)
-    stop("data series to short")
-  if (!is.numeric(delta_t) |
-      length(delta_t) != 1L |
-      any(!is.finite(delta_t)) |
-      delta_t <= 0)
-    stop("'delta_t' must be positive (>0) finite numeric of length one")
-  if (stats::var(x) == 0)
-  {
-    res <- list(
+  ## ---------------------------
+  ## Helpers
+  ## ---------------------------
+  empty_result <- function(n_max = 0L, maxima = integer()) {
+    list(
       freq_max2max = NA_real_,
       c_v = NA_real_,
-      n_max = NA_real_,
-      maxima_sampled = integer(0)
+      n_max = n_max,
+      maxima_sampled = maxima
     )
-    message("'x' does not contain fluctuations, returning NA")
-  } else
-  {
-    args <- list(...)
-    if (length(args) > 0 &
-        !all(names(args) %in% c("span", "strict", "emdbehavior")))
-      message("\"...\" contains unknown and unused arguments")
-
-
-    # transfer the arguments for splus2R::peaks function
-    args_max <- list(
-      span = 11,
-      strict = TRUE,
-      endbehavior = 0,
-      x = x
-    )
-    if ("span" %in% names(args))
-      args_max$span <- args$span
-    if ("strict" %in% names(args))
-      args_max$strict <- FALSE
-    if ("endbehavior" %in% names(args))
-      args_max$endbehavior <-  args$endbehavior
-
-    Timings <- do.call(splus2R::peaks, args_max)
-
-    n_max <- length(which(Timings))
-    if (n_max < 3)
-    {
-      res <- list(
-        freq_max2max = NA_real_,
-        c_v = NA_real_,
-        n_max = n_max,
-        maxima_sampled = which(Timings)
-      )
-      message("at least three identified maxima are required, returning NA")
-    }
-    else
-    {
-      ISI_Timings <-  diff(which(Timings)) * delta_t
-      n_ISI_Timings <- length(ISI_Timings)
-
-      freq_max2max <-  1. / mean(ISI_Timings)
-
-      c_v = coefficient_of_variation(which(Timings))
-
-      res <- list(
-        freq_max2max = freq_max2max,
-        c_v = c_v,
-        n_max = n_max,
-        maxima_sampled = which(Timings)
-      )
-
-    }
   }
-  return(res)
+
+  .msg <- function(txt) if (.warn) message(txt)
+
+  ## ---------------------------
+  ## Input validation
+  ## ---------------------------
+  if (!is.numeric(x) || length(x) <= 1L || anyNA(x) || any(!is.finite(x))) {
+    stop("'x' must be a finite numeric vector of length > 1")
+  }
+
+  if (!is.numeric(delta_t) || length(delta_t) != 1L ||
+      !is.finite(delta_t) || delta_t <= 0) {
+    stop("'delta_t' must be a positive finite scalar")
+  }
+
+  var_x <- stats::var(x)
+
+  ## ---------------------------
+  ## No variability
+  ## ---------------------------
+  if (var_x == 0) {
+    .msg("'x' has no variability, returning NA")
+    return(empty_result())
+  }
+
+  ## ---------------------------
+  ## Optional args handling
+  ## ---------------------------
+  dots <- list(...)
+  valid_args <- c("span", "strict", "endbehavior")
+
+  unknown <- setdiff(names(dots), valid_args)
+  if (length(unknown) && .warn) {
+    message("Ignoring unknown arguments: ", paste(unknown, collapse = ", "))
+  }
+
+  args_max <- modifyList(
+    list(x = x, span = 11, strict = TRUE, endbehavior = 0),
+    dots[intersect(names(dots), valid_args)]
+  )
+
+  ## ---------------------------
+  ## Peak detection
+  ## ---------------------------
+  maxima_idx <- which(do.call(splus2R::peaks, args_max))
+  n_max <- length(maxima_idx)
+
+  if (n_max < 3L) {
+    .msg("At least 3 maxima required, returning NA")
+    return(empty_result(n_max, maxima_idx))
+  }
+
+  ## ---------------------------
+  ## Metrics
+  ## ---------------------------
+  isi <- diff(maxima_idx) * delta_t
+
+  list(
+    freq_max2max = 1 / mean(isi),
+    c_v = coefficient_of_variation(isi),
+    n_max = n_max,
+    maxima_sampled = maxima_idx
+  )
 }
 
-coefficient_of_variation <- function(Timings)
-{
-  if (!is.vector(Timings) |
-      !is.numeric(Timings) |
-      any(is.na(Timings)) |
-      any(!is.finite(Timings)) |
-      length(Timings) < 3) {
-    message (
-      "vector of maxima must be a non-infinite real-valued numeric vector with at least two elements, returning NA"
-    )
 
-    cv = NA_real_
-  } else
-  {
-    IEOT = diff(Timings)
-    cv = stats::sd(IEOT) / mean(IEOT)
+coefficient_of_variation <- function(isi)
+{
+  if (!is.numeric(isi) || length(isi) < 2L ||
+      anyNA(isi) || any(!is.finite(isi))) {
+    return(NA_real_)
   }
-  return(cv)
+
+  m <- mean(isi)
+  if (m == 0) return(NA_real_)
+
+  stats::sd(isi) / m
 }

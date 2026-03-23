@@ -66,120 +66,148 @@ freq_Lorentz_fit <- function(x,
                              welch_window = FALSE,
                              f_min = 0,
                              f_max = Inf,
-                             control = gslnls::gsl_nls_control(maxiter = 500, ftol = 0.00001, gtol = 0.00001, xtol = 0.00001, h_df = 0.00001),
-                             algorithm = "lm")
-{
-  if (!is.vector(x) |
-      !is.numeric(x) |
-      any(is.na(x)) |
-      any(!is.finite(x)))
-    stop("'x' must be non-infinite real-valued numeric vector")
-  if (length(x) == 0L)
-    stop("data series to short")
-  if (!is.numeric(delta_t) |
-      length(delta_t) != 1L |
-      any(!is.finite(delta_t)))
-    stop("'delta_t' must be finite numeric of length one")
-  if (delta_t <= 0)
-    stop("'delta_t' must be positive (>0)")
-  if (length(welch_window) != 1L |
-      !is.logical(welch_window))
-    stop("'welch_window' must be logical of length one")
-  if (!is.numeric(f_min) |
-      length(f_min) != 1L |
-      !is.finite(f_min) |
-      f_min < 0)
-    stop("'f_min' must be must be positive numeric of length one")
-  if (!is.numeric(f_max) |
-      length(f_max) != 1L |
-      f_max == -Inf |
-      f_max <= 0)
-    stop("'f_max' must be must be positive numeric of length one")
+                             control = gslnls::gsl_nls_control(
+                               maxiter = 500,
+                               ftol = 1e-5,
+                               gtol = 1e-5,
+                               xtol = 1e-5,
+                               h_df = 1e-5
+                             ),
+                             algorithm = "lm") {
+  ## ---------------------------
+  ## Input validation
+  ## ---------------------------
+  stopifnot(
+    is.numeric(x),
+    is.vector(x),
+    length(x) > 1,
+    all(is.finite(x)),
+    is.numeric(delta_t),
+    length(delta_t) == 1,
+    delta_t > 0,
+    is.finite(delta_t),
+    is.logical(welch_window),
+    length(welch_window) == 1,
+    is.numeric(f_min),
+    length(f_min) == 1,
+    is.finite(f_min),
+    f_min >= 0,
+    is.numeric(f_max),
+    length(f_max) == 1,
+    f_max > 0
+  )
+
   if (f_max < f_min)
     stop("'f_max' < 'f_min'")
-  if (f_min >  1. / 2 / delta_t)
-    stop("'f_min' is larger than the maximum of the sampled frequencies")
-  if (f_max <  1 / length(x) / delta_t)
-    stop("'f_max' is smaller than the minimum of the sampled frequencies")
-  if (stats::var(x) == 0)
-  {
-    warning("'x' does not contain fluctuations, returning NA")
 
-    res <- list(
-      freq_Lorentz = NA_real_,
-      scale_Lorentz = NA_real_,
-      alpha_Lorentz = NA_real_,
-      expl_var = NA_real_,
-      Lorentz_model = NULL,
-      WARN = NULL
+  nyquist <- 1 / (2 * delta_t)
+  if (f_min > nyquist)
+    stop("'f_min' exceeds Nyquist frequency")
+
+  ## ---------------------------
+  ## Handle constant signal
+  ## ---------------------------
+  if (stats::var(x) == 0) {
+    warning("'x' has zero variance")
+    return(
+      list(
+        freq_Lorentz = NA_real_,
+        scale_Lorentz = NA_real_,
+        alpha_Lorentz = NA_real_,
+        expl_var = NA_real_,
+        Lorentz_model = NULL,
+        WARN = NULL
+      )
     )
   }
-  else
-  {
-    N <- length(x)
-    N_half <- floor(N / 2)
-    delta_f <- 1 / (length(x) * delta_t)
-    x_demean <- x - mean(x)
-    if (welch_window)
-      x_demean <- x_demean * welch(N)
 
-    A <- abs(stats::fft(x_demean) / N)
-    A <- 2 * A[2:(1 + N_half)]
-    freq <- delta_f * (1:N_half)
+  ## ---------------------------
+  ## FFT and preprocessing
+  ## ---------------------------
+  N <- length(x)
+  N_half <- floor(N / 2)
+  delta_f <- 1 / (N * delta_t)
+
+  x_centered <- x - mean(x)
+  if (welch_window) {
+    x_centered <- x_centered * welch_window_fn(N)
+  }
+
+  fft_vals <- stats::fft(x_centered)
+  Amp <- 2 * abs(fft_vals[2:(N_half + 1)]) / N
+  freq <- delta_f * seq_len(N_half)
+
+  ## ---------------------------
+  ## Frequency windowing
+  ## ---------------------------
+  idx <- which(freq >= f_min & freq <= f_max)
+
+  if (length(idx) < 4)
+    stop("Frequency range contains < 4 points")
+  if (length(idx) < 10)
+    warning("Fitting on < 10 points may be unstable")
+
+  freq <- freq[idx]
+  Amp <- Amp[idx]
+
+  ## ---------------------------
+  ## Initial parameter estimates
+  ## ---------------------------
+  w_max <- which.max(Amp)
+  mean_freq <- weighted.mean(freq, Amp)
+  sigma_start <- sqrt(weighted.mean((freq - mean_freq)^2, Amp))
+  freq_max = freq[w_max]
+  data_fit <- data.frame(freq = freq, Amp = Amp)
+
+  ## ---------------------------
+  ## Fit
+  ## ---------------------------
 
 
-    w <- which (freq >= f_min & freq <= f_max)
-    if (length(w) < 4)
-      stop("Frequency range contains less than 4 frequencies")
-    if (length(w) < 10)
-      warning("The Lorentzian is fitted to < 10 data points")
-    freq <- freq[w]
-    Amp <- A[w]
-    PP <- data.frame(freq = freq, Amp = Amp)
+  form <- Amp ~ FibFreq:::Lorentz_fn_with_jacobian(freq, alpha_Lorentz, Lorentz_freq, sigma)
+  environment(form) <- environment()
 
-    ww <- which.max(Amp)
-    argmax_freq <-  freq[ww[1]]
-    mean_freq <-  sum(Amp * freq) / sum(Amp)
-    sigma_squared <- sum(Amp * (freq - mean_freq)^2) / sum(Amp)
-    sigma_start <- sqrt(sigma_squared)
-
-
-
-    result_fitting <- withWarnings(
-      gslnls::gsl_nls(
-            Amp ~  (alpha_Lorentz/pi)* sigma / ((freq - Lorentz_freq)^2 + sigma^2),
-            data = PP,
-            start = list( alpha_Lorentz = 1, Lorentz_freq = c(min(freq),max(freq)), sigma = sigma_start),
-            jac = function(par) with(as.list(par),                 ## jacobian
-            cbind( (1/pi)* sigma / ((freq - Lorentz_freq)^2 + sigma^2), Lorentz_freq = (alpha_Lorentz/pi) * 2 * sigma * (freq - Lorentz_freq)/((freq - Lorentz_freq)^2 + sigma^2)^2,  sigma =  (alpha_Lorentz/pi) * ((freq - Lorentz_freq)^2 - sigma^2)/((freq - Lorentz_freq)^2 + sigma^2)^2)
-            ),
-            control = control,
-            algorithm = "lm")
+  fit <- withWarnings(
+    gslnls::gsl_nls(
+      fn = form,
+      data = data_fit,
+      start = list(
+        alpha_Lorentz = 1,
+        Lorentz_freq = freq_max,
+        sigma = sigma_start
+      ),
+      control = control,
+      algorithm = algorithm
     )
+  )
 
+  ## ---------------------------
+  ## Extract results
+  ## ---------------------------
+  fitted_model <- fit$value
+  params <- fitted_model$m$getPars()
 
-     Fourier_Amp_model <- stats::predict(result_fitting$value)
-     fitted_params <- result_fitting$value$m$getPars()
-     freq_Lorentz <-  unname(fitted_params ["Lorentz_freq"])
-     scale_Lorentz <- unname(fitted_params ["sigma"])
-     alpha_Lorentz <- unname(fitted_params ["alpha_Lorentz"])
-     expl_var <- (sum((Fourier_Amp_model)^2) / sum((PP$Amp^2)))
-     Lorentz_model = list(Frequency = PP$freq, Fourier_Amps = PP$Amp, modelled_Fourier_Amps = Fourier_Amp_model)
-     warn = result_fitting$warnings
+  pred <- stats::predict(fitted_model)
 
-    res <- list(
-      freq_Lorentz = freq_Lorentz,
-      scale_Lorentz = scale_Lorentz,
-      alpha_Lorentz = alpha_Lorentz,
-      expl_var = expl_var,
-      Lorentz_model = Lorentz_model,
-      WARN = warn
-    )
-    }
+  expl_var <- sum(pred^2) / sum(Amp^2)
 
-
-  return(res)
+  ## ---------------------------
+  ## Output
+  ## ---------------------------
+  list(
+    freq_Lorentz = unname(params["Lorentz_freq"]),
+    scale_Lorentz = unname(params["sigma"]),
+    alpha_Lorentz = unname(params["alpha_Lorentz"]),
+    expl_var = expl_var,
+    Lorentz_model = list(
+      Frequency = freq,
+      Fourier_Amps = Amp,
+      modelled_Fourier_Amps = pred
+    ),
+    WARN = fit$warnings
+  )
 }
+
 
 
 # Auxiliary Function
@@ -188,13 +216,49 @@ freq_Lorentz_fit <- function(x,
 #	https://stat.ethz.ch/pipermail/r-help/2004-June/052132.html
 
 withWarnings <- function(expr) {
-  W <- NULL
+  # Use a local environment to store warnings to avoid repeated <<- copying
+  # However, for simply returning a list of objects, this is more robust:
+  local_vars <- new.env()
+  local_vars$W <- list()
+
+
+
   wHandler <- function(w) {
-    W <<- c(W, list(w))
+    local_vars$W <- c(local_vars$W, list(w))
     invokeRestart("muffleWarning")
   }
+
   val <- withCallingHandlers(expr, warning = wHandler)
-  list(value = val, warnings = W)
+
+  # Return structured output
+  list(value = val, warnings = local_vars$W)
+}
+
+
+## ---------------------------
+## Lorentz model
+## ---------------------------
+Lorentz_fn <- function(freq,
+                       alpha_Lorentz,
+                       Lorentz_freq,
+                       sigma) {
+  (alpha_Lorentz / pi) * sigma /
+    ((freq - Lorentz_freq)^2 + sigma^2)
+}
+
+Lorentz_fn_with_jacobian <- function(freq, alpha_Lorentz, Lorentz_freq, sigma) {
+  D <- (freq - Lorentz_freq)^2 + sigma^2
+  fit <- (alpha_Lorentz / pi) * sigma / D
+
+  jacobian <- cbind(
+    alpha_Lorentz = (1 / pi) * sigma / D,
+    Lorentz_freq = (2 * alpha_Lorentz * sigma * (freq - Lorentz_freq)) / (pi * D^2),
+    sigma = (alpha_Lorentz / pi) * ((freq - Lorentz_freq)^2 - sigma^2) / (D^2)
+  )
+
+  attr(fit, "gradient") <- jacobian
+
+  return(fit)
 }
 
 

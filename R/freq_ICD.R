@@ -43,104 +43,61 @@ freq_ICD <- function(x,
                      delta_t = 0.001,
                      ...)
 {
-  if (!is.vector(x) |
-      !is.numeric(x) |
-      any(is.na(x)) |
-      any(!is.finite(x)))
-    stop("'x' must be non-infinite real-valued numeric vector")
-  if (length(x) < 3L)
-    stop("data series to short")
-  if (!is.numeric(thresh_min) |
-      length(thresh_min) != 1L |
-      !is.finite(thresh_min))
-    stop("'thresh_min' must be a finite numeric of length one")
-  if (!is.numeric(amp_fac) |
-      length(amp_fac) != 1L |
-      is.na(amp_fac) |
-      !is.finite(amp_fac) |
-      amp_fac <= 0)
-    stop("'amp_fac' must be a finite and positive  numeric of length one")
-  if (!is.numeric(delta_t_u) |
-      length(delta_t_u) != 1L |
-      !is.finite(delta_t_u) |
-      delta_t_u <= 0)
-    stop("'delta_t_u' must be finite and positive numeric of length one")
-  if (!is.numeric(delta_t_l) |
-      length(delta_t_l) != 1L |
-      !is.finite(delta_t_l) |
-      delta_t_l <= 0)
-    stop("'delta_t_l' must be finite and positive numeric of length one")
-  if (!is.numeric(delta_t) |
-      length(delta_t) != 1L |
-      !is.finite(delta_t) |
-      delta_t <= 0)
-    stop("'delta_t' must be finite and positive numeric of length one")
-  if (delta_t_l < delta_t)
-    stop("length of lower threshold time interval smaller than sampling interval")
-  if (delta_t_u < delta_t)
-    stop("length of upper threshold time interval smaller than sampling interval")
-  if (stats::var(x) == 0)
-  {
-    res <- list(
-      freq_ICD = NA_real_,
-      c_v = NA_real_,
-      no_of_peaks = 0,
-      maxima_sampled = integer()
-    )
+  validate_numeric <- function(x, len = NULL, finite = TRUE, positive = FALSE, arg_name = "x") {
+    if (is.null(x)) stop(sprintf("'%s' must not be NULL", arg_name))
+    if (!is.numeric(x) || !is.vector(x)) stop(sprintf("'%s' must be a numeric vector", arg_name))
+    if (!is.null(len) && length(x) != len) stop(sprintf("'%s' must be of length %d", arg_name, len))
+    if (any(is.na(x))) stop(sprintf("'%s' contains NA values", arg_name))
+    if (finite && any(!is.finite(x))) stop(sprintf("'%s' must be finite", arg_name))
+    if (positive && any(x <= 0)) stop(sprintf("'%s' must be positive", arg_name))
+  }
+
+  # Validations
+  validate_numeric(x, finite = TRUE, arg_name = "x")
+  if (length(x) < 3L) stop("data series too short")
+
+  validate_numeric(thresh_min, len = 1, finite = TRUE, arg_name = "thresh_min")
+  validate_numeric(amp_fac,    len = 1, finite = TRUE, positive = TRUE, arg_name = "amp_fac")
+  validate_numeric(delta_t_u,  len = 1, finite = TRUE, positive = TRUE, arg_name = "delta_t_u")
+  validate_numeric(delta_t_l,  len = 1, finite = TRUE, positive = TRUE, arg_name = "delta_t_l")
+  validate_numeric(delta_t,    len = 1, finite = TRUE, positive = TRUE, arg_name = "delta_t")
+
+  if (delta_t_l < delta_t) stop("length of lower threshold time interval smaller than sampling interval")
+  if (delta_t_u < delta_t) stop("length of upper threshold time interval smaller than sampling interval")
+
+  res <- list(
+    freq_ICD = NA_real_,
+    c_v = NA_real_,
+    no_of_peaks = 0,
+    maxima_sampled = integer()
+  )
+
+  if (stats::var(x) == 0) {
     message("'x' does not contain fluctuations, returning NULL")
+  } else if (all(x < thresh_min)) {
+    message("'x' does not contain values above 'thresh_min'")
+  } else if (all(x >= thresh_min)) {
+    message("'x' does not contain values below 'thresh_min'")
+  } else if (!any(upward_threshold_crossing(x, thresh_min))) {
+    message("'x' no threshold crossings")
   } else
-    if (all(x < thresh_min))
-    {
-      res <- list(
-        freq_ICD = NA_real_,
-        c_v = NA_real_,
-        no_of_peaks = 0,
-        maxima_sampled = integer()
-      )
-      message("'x' does not contain values above 'thresh_min'")
-    } else
-      if (all(x >= thresh_min))
-      {
-        res <- list(
-          freq_ICD = NA_real_,
-          c_v = NA_real_,
-          no_of_peaks = 0,
-          maxima_sampled = integer()
-        )
-        message("'x' does not contain values below 'thresh_min'")
-      } else
-        if (!any(upward_threshold_crossing(x, thresh_min)))
-          # hier fehlt noch die Variante, dass das EKG zu einem Zeitpunkt genau min_thresh ist
-        {
-          res <- list(
-            freq_ICD = NA_real_,
-            c_v = NA_real_,
-            no_of_peaks = 0,
-            maxima_sampled = integer()
-          )
-          message("'x' no threshold crossings")
-        }
-  else
   {
     args <- list(...)
-    if (length(args) > 0 &
-        !all(names(args) %in% c("span", "strict", "emdbehavior")))
-      message("\"...\" contains unknown and unused arguments")
 
-    # transfer the arguments for splus2R::peaks function
-    args_max <- list(
-      span = 11,
-      strict = FALSE,
-      endbehavior = 0,
-      x = x
-    )
-    if ("span" %in% names(args))
-      args_max$span <- args$span
-    if ("strict" %in% names(args))
-      args_max$strict <- FALSE
-    if ("endbehavior" %in% names(args))
-      args_max$endbehavior <-  args$endbehavior
+    allowed_args <- c("span", "strict", "endbehavior")
+    if (length(args) > 0 && !all(names(args) %in% allowed_args)) {
+      message("\"...\" contains unknown and unused arguments")
+    }
+
+    # Default arguments
+    args_max <- list(span = 11, strict = FALSE, endbehavior = 0, x = x)
+
+    # Update defaults with provided args (only allowed ones)
+    args_max <- modifyList(args_max, args[intersect(names(args), allowed_args)])
+
+    # Ensure x is always set correctly
     args_max$x <- x
+
 
     local_max <- do.call(splus2R::peaks, args_max)
     local_max_over_thresh_min <- (local_max & (x > thresh_min))
@@ -285,7 +242,7 @@ freq_ICD <- function(x,
 
       if (index_of_peak > 1) {
         freq_ICD = (index_of_peak - 1) / (delta_t * diff(range(Timings)))
-        c_v = coefficient_of_variation(Timings)
+        c_v = coefficient_of_variation(diff(Timings*delta_t))
 
         res <- list(
           freq_ICD = freq_ICD,

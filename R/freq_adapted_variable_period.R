@@ -41,88 +41,141 @@
 #' freq_argmax_periodogram(ecg_6, delta_t = 0.001)
 #'
 
-freq_adapted_variable_period <- function(x,
-                              delta_t = 1.0) {
-  if (!is.vector(x) |
-      !is.numeric(x) |
-      any(is.na(x)) |
-      any(!is.finite(x)))
-    stop("'x' must be non-infinite real-valued numeric vector")
-  if (length(x) == 0L)
-    stop("data series to short")
-  if (length(delta_t) != 1L |
-      !is.numeric(delta_t) |
-      !is.finite(delta_t) |
-      delta_t <= 0)
-    stop("'delta_t' must be positive finite numeric of length one")
-  if (stats::var(x) == 0)
-  {
-    res <- c(freq_optim = NA_real_, Max_AVP = NA_real_, ts_length_considered = NA_real_, expl_var = NA_real_)
-    message("time series 'x' does not contain fluctuations, returning NA")
-  } else
-  {
-    N <- length(x)
-    N_half <- floor(N/2)
+freq_adapted_variable_period <- function(x, delta_t = 1.0) {
+  ## ---------------------------
+  ## Input validation
+  ## ---------------------------
+  stopifnot(
+    is.numeric(x),
+    is.vector(x),
+    length(x) > 1,
+    all(is.finite(x)),
+    is.numeric(delta_t),
+    length(delta_t) == 1,
+    is.finite(delta_t),
+    delta_t > 0
+  )
 
-    result = array(c(0), dim = c(2, 1 + ceiling(N / 2)))
 
-    for (NP in floor(N / 2):N)
-      result[, NP + 1 - floor(N / 2)] <- Periodogram_sampled(x, NP, delta_t)
+  ## ---------------------------
+  ## Handle constant signal
+  ## ---------------------------
 
-    mp <- which.max(result[2, ])
+  var_x <- stats::var(x)
 
-    Max <- result[2, mp]
-    freq_AVP <- result[1, mp]
-    expl_variance <- Max/stats::var(x)/ (length(x)-1)
-    NP <- floor(N / 2) -1 + mp
-
-    res <- list(freq_AVP = freq_AVP, Max_AVP = Max, ts_length_considered = NP, expl_var = expl_variance)
+  if (var_x == 0) {
+    warning("'x' has zero variance")
+    return(
+      list(
+        freq_AVP = NA_real_,
+        Max_AVP = NA_real_,
+        ts_length_considered = NA_real_,
+        expl_var = NA_real_
+      )
+    )
   }
-  return(res)
-}
 
+
+
+  ## ---------------------------
+  ## Setup
+  ## ---------------------------
+  N <- length(x)
+  NP_seq <- seq.int(from = floor(N / 2), to = N)
+
+  ## ---------------------------
+  ## Evaluate all candidate lengths
+  ## ---------------------------
+  res_mat <- t(vapply(
+    NP_seq,
+    Periodogram_sampled_fast,
+    numeric(2),
+    x = x,
+    delta_t = delta_t
+  ))
+
+  colnames(res_mat) <- c("freq", "power")
+
+  ## ---------------------------
+  ## Select optimum
+  ## ---------------------------
+  best_idx <- which.max(res_mat[, "power"])
+
+  freq_AVP <- unname(res_mat[best_idx, "freq"])
+  Max_AVP <- unname(res_mat[best_idx, "power"])
+  NP_best <- NP_seq[best_idx][1]
+
+  expl_var <- unname(Max_AVP / var_x / (N - 1))
+
+  ## ---------------------------
+  ## Output
+  ## ---------------------------
+  list(
+    freq_AVP = freq_AVP,
+    Max_AVP = Max_AVP,
+    ts_length_considered = NP_best,
+    expl_var = expl_var
+  )
+}
 
 #
 # AUXILIARY FUNCTIONS
 #
 
 ifft <- function(x) {
-  Conj(stats::fft(x)) / (2 * pi)
+  Conj(stats::fft(x, inverse = TRUE)) / length(x)
 }
 
 
-Periodogram_sampled <- function(x, assumed_ts_length, delta_t)
-{
+Periodogram_sampled_fast <- function(x, assumed_ts_length, delta_t) {
   N <- length(x)
-  N_rem <- N %% assumed_ts_length
-  xxp <- array(c(x, rep(0, assumed_ts_length - N_rem)), dim = c(assumed_ts_length, N / assumed_ts_length + 1))
-  xxn <- array(c(rep(1, N), rep(0, assumed_ts_length - N_rem)),
-               dim = c(assumed_ts_length, N / assumed_ts_length + 1))
 
-  xp <- rowSums(xxp)
-  xn <- rowSums(xxn)
-  ## Fourier Transform of xp and xn
+  ## ---------------------------
+  ## Zero padding (more efficient)
+  ## ---------------------------
+  N_pad <- ceiling(N / assumed_ts_length) * assumed_ts_length
+  x_pad <- c(x, rep(0, N_pad - N))
+
+  dim(x_pad) <- c(assumed_ts_length, N_pad / assumed_ts_length)
+
+  ## Indicator (instead of recomputing every time)
+  ind <- c(rep(1, N), rep(0, N_pad - N))
+  dim(ind) <- dim(x_pad)
+
+  ## ---------------------------
+  ## Aggregation
+  ## ---------------------------
+  xp <- rowSums(x_pad)
+  xn <- rowSums(ind)
+
+  ## ---------------------------
+  ## FFTs
+  ## ---------------------------
   XP <- stats::fft(xp)
   XN <- stats::fft(xn)
 
-  ## Periodograms of XP and XN
-  PP <- abs(XP)^2 / assumed_ts_length^2
-  PN <- abs(XN)^2 / assumed_ts_length^2
+  PP <- Mod(XP)^2 / assumed_ts_length^2
+  PN <- Mod(XN)^2 / assumed_ts_length^2
 
-  ## Correlation function of XP
-  C_coarse_grained <- Re(ifft(PP)) / Re(ifft(PN))
+  ## ---------------------------
+  ## Stable division (avoid NaN)
+  ## ---------------------------
+  denom <- Re(ifft(PN))
+  denom[denom == 0] <- .Machine$double.eps
 
-  ## Fourier transform of the correlation function -> Periodogram of xp with respect to zero padding
+  C <- Re(ifft(PP)) / denom
 
-  P <- Re(stats::fft(C_coarse_grained))
-  periodogram <- 2 * P[2:(floor(assumed_ts_length / 2) + 1)]
-  freqs = seq(1/assumed_ts_length, 0.5, by = 1./assumed_ts_length) / delta_t
+  ## ---------------------------
+  ## Final periodogram
+  ## ---------------------------
+  P <- Re(stats::fft(C))
+
+  half <- floor(assumed_ts_length / 2)
+  periodogram <- 2 * P[2:(half + 1)]
+
+  freqs <- (seq_len(half) / assumed_ts_length) / delta_t
+
   idx <- which.max(periodogram)
-  freq_argmax <- freqs[idx]
-  max_periodogram <- periodogram[idx]
 
-  res = c(freq_argmax = freq_argmax, max_periodogram = max_periodogram)
-
-  return (res)
+  c(freq = freqs[idx], power = periodogram[idx])
 }
-

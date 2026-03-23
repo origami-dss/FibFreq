@@ -26,7 +26,6 @@ test_that("freq_threshold_crossing throughs an error in case of non-numerical or
   expect_error(freq_threshold_crossing(rep(0,10), thresh = c(NaN)))
   expect_error(freq_threshold_crossing(rep(0,10), thresh = c(Inf)))
   expect_error(freq_threshold_crossing(rep(0,10), thresh = c(-Inf)))
-  expect_error(freq_threshold_crossing(rep(0,10), thresh = NULL))
   expect_error(freq_threshold_crossing(rep(0,10), thresh = c(0.1, 0.2)))
 })
 
@@ -62,10 +61,13 @@ test_that("freq_threshold_crossing returns a list of length 4", {
 
 test_that("freq_threshold_crossing returns correct output", {
   expect_equal(freq_threshold_crossing(1:10, thresh = 1), list(freq_threshold_crossing = NA_real_,  c_v = NA_real_,  n_thresh = NA_real_, threshold_crossings = integer(0)))
+  expect_equal(freq_threshold_crossing(1:10, thresh = NULL), list(freq_threshold_crossing = NA_real_,  c_v = NA_real_,  n_thresh = NA_real_, threshold_crossings = integer(0)))
   expect_equal(freq_threshold_crossing(rep(0,10), thresh = 1), list(freq_threshold_crossing = NA_real_,   c_v = NA_real_, n_thresh = NA_real_, threshold_crossings = integer(0)))
   expect_equal(freq_threshold_crossing(rep(c(1,-1),5), thresh = 0.5),  list(freq_threshold_crossing = 0.5,  c_v = 0, n_thresh = 4, threshold_crossings = c(3, 5, 7, 9)))
   expect_equal(freq_threshold_crossing(rep(c(1,-1),5), thresh = 0.0),  list(freq_threshold_crossing = 0.5, c_v = 0, n_thresh = 4, threshold_crossings = c(3, 5, 7, 9)))
   expect_equal(freq_threshold_crossing(rep(c(1,-1),5), thresh = 0.5, delta_t = 2),  list(freq_threshold_crossing = 0.25, c_v = 0, n_thresh = 4, threshold_crossings = c(3, 5, 7, 9)))
+  expect_equal(freq_threshold_crossing(rep(c(1,-1),10), thresh = 0.0),  list(freq_threshold_crossing = 0.5, c_v = 0, n_thresh = 9, threshold_crossings = c(3, 5, 7, 9, 11, 13, 15, 17, 19)))
+  expect_equal(freq_threshold_crossing(rep(c(1,-1),10), thresh = 0.5, delta_t = 2),  list(freq_threshold_crossing = 0.25, c_v = 0, n_thresh = 9, threshold_crossings = c(3, 5, 7, 9, 11, 13, 15, 17, 19)))
   expect_equal(freq_threshold_crossing(rep(c(-1, 0.1, 0.1, 0.1, 0.1, 1, 0.1, 0.1, 0.1, 0.1), 5), thresh = 0.5),  list(freq_threshold_crossing = 0.1, c_v = 0, n_thresh = 5, threshold_crossings = c(6, 16, 26, 36, 46)))
   expect_equal(freq_threshold_crossing(rep(c(-1, 0.1, 0.1, 0.1, 0.1, 1, 0.1, 0.1, 0.1, 0.1), 5),  thresh = 0, delta_t = 2),  list(freq_threshold_crossing = 0.05, c_v = 0, n_thresh = 5, threshold_crossings =c( 2, 12, 22, 32, 42)))
   expect_equal(freq_threshold_crossing(rep(c(-1, 0, 0, 0, 0, 1, 0, 0, 0, 0), 5),  thresh = 0.1),  list(freq_threshold_crossing = 0.1, c_v = 0, n_thresh = 5, threshold_crossings = c (6, 16, 26, 36, 46)))
@@ -75,6 +77,5 @@ test_that("freq_threshold_crossing returns correct output", {
 
   expect_equal(freq_threshold_crossing(x1, thresh = 0),  list(freq_threshold_crossing = 0.05, c_v = 0, n_thresh = 4, threshold_crossings = c(21, 41, 61, 81)))
   expect_equal(freq_threshold_crossing(x2, thresh = 1),  list(freq_threshold_crossing = 0.05, c_v = 0, n_thresh = 4, threshold_crossings = c(21, 41, 61, 81)))
-
 })
 

@@ -45,58 +45,90 @@
 
 
 freq_fitted_sinusoidals <- function(x, delta_t = 1.0, test_freqs) {
-  if (!is.vector(x) |
-      !is.numeric(x) |
-      any(is.na(x)) |
-      any(is.infinite(x)))
-    stop("'x' must be non-infinite real-valued numeric vector")
-  if (length(x) == 0L)
-    stop("data series to short")
-  if (length(delta_t) != 1L |
-      !is.numeric(delta_t) |
-      is.infinite(delta_t) |
-      delta_t <= 0)
-    stop("'delta_t' must be positive finite numeric of length one")
-  if (!is.vector(test_freqs)|
-      length(test_freqs) == 0 |
-      !is.numeric(test_freqs) |
-      any(is.na(test_freqs)) |
-      any(is.infinite(test_freqs)) |
-      any(test_freqs <= 0))
-    stop("'test_freqs' must be non-infinite real-valued  numeric vector with positive elements")
 
-    l <- length(test_freqs)
+  ## ---------------------------
+  ## Input validation
+  ## ---------------------------
+  stopifnot(
+    is.numeric(x), is.vector(x), length(x) > 1, all(is.finite(x)),
+    is.numeric(delta_t), length(delta_t) == 1, is.finite(delta_t), delta_t > 0,
+    is.numeric(test_freqs), length(test_freqs) > 0, all(is.finite(test_freqs)),
+    all(test_freqs > 0)
+  )
 
-    t(sapply(test_freqs,fit_sinusoidal_function, x = x, delta_t = delta_t)) -> res
+  ## ---------------------------
+  ## Precompute time vector
+  ## ---------------------------
+  n <- length(x)
+  t <- seq_len(n) * delta_t
+  var_x <- stats::var(x)
 
-#    second_res <- cbind(unname(test_freqs), unname(first_res[,4]))
-
-    w <- which.max(res[,4])
-
-    freq_fitted =  test_freqs[w]
-    expl_var = unname(res[w,4])
-    params = res[w,1:3]
-    model_ts =  params[1] + params[2] * sin (2*pi * freq_fitted *(1:length(x))*delta_t + params[3])
-
-    res <- list(freq_fitted = freq_fitted, expl_var = expl_var, params = params, model_ts = model_ts)
-  return(res)
-}
-
-
-fit_sinusoidal_function <- function(x, delta_t, freq )
-{
-  {
-    t <- (1:length(x)) * delta_t
-    res_lm <- stats::lm(x ~ sin(2 * pi * freq * t) + cos(2 * pi * freq * t))
-    A <- res_lm$coefficients[[1]]
-    B <- sqrt(res_lm$coefficients[[2]]^2 + res_lm$coefficients[[3]]^2)
-    C <- atan2(res_lm$coefficients[[3]],res_lm$coefficients[[2]])
-    expl_var <- (stats::var(x)- stats::var(res_lm$residuals)) / stats::var(x)
-    res <- c(offset = A, amp = B, phase = C, expl_var = expl_var)
-
+  if (var_x == 0) {
+    warning("'x' has zero variance")
+    return(list(
+      freq_fitted = NA_real_,
+      expl_var = NA_real_,
+      params = c(offset = NA_real_, amp = NA_real_, phase = NA_real_),
+      model_ts = rep(NA_real_, n)
+    ))
   }
-  return(res)
+
+  ## ---------------------------
+  ## Fast sinusoidal fit
+  ## ---------------------------
+  fit_one_freq <- function(freq) {
+    s <- sin(2 * pi * freq * t)
+    c <- cos(2 * pi * freq * t)
+
+    # Design matrix
+    X <- cbind(1, s, c)
+
+    # Solve least squares via QR
+    coef <- qr.solve(X, x)
+
+    A <- coef[1]
+    B_sin <- unname(coef[2])
+    B_cos <- unname(coef[3])
+
+    amp <- sqrt(B_sin^2 + B_cos^2)
+    phase <- atan2(B_cos, B_sin)
+
+    # residuals without refitting
+    fitted <- X %*% coef
+    resid <- x - fitted
+
+    expl_var <- (var_x - stats::var(resid)) / var_x
+
+   return( c(offset = A, amp = amp, phase = phase, expl_var = expl_var))
+  }
+
+  ## ---------------------------
+  ## Evaluate all frequencies
+  ## ---------------------------
+  res_mat <- t(vapply(test_freqs, fit_one_freq, numeric(4)))
+
+  ## ---------------------------
+  ## Select best frequency
+  ## ---------------------------
+  best_idx <- which.max(res_mat[, "expl_var"])
+
+  freq_fitted <- test_freqs[best_idx]
+  params <- res_mat[best_idx, c("offset", "amp", "phase")]
+  expl_var <- res_mat[best_idx, "expl_var"]
+
+  ## ---------------------------
+  ## Reconstruct model
+  ## ---------------------------
+  model_ts <- params["offset"] +
+    params["amp"] * sin(2 * pi * freq_fitted * t + params["phase"])
+
+  ## ---------------------------
+  ## Output
+  ## ---------------------------
+  list(
+    freq_fitted = freq_fitted,
+    expl_var = unname(expl_var),
+    params = params,
+    model_ts = as.numeric(model_ts)
+  )
 }
-
-
-

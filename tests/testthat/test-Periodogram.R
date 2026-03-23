@@ -68,5 +68,5 @@ test_that("Periodogram returns an array of dim (length(input/2),2 )", {
 test_that("Periodogram returns correct output", {
   expect_equal(Periodogram(1:10)[[1]],  1:5/10)
   expect_equal(Periodogram(rep(0,10))[[2]],  rep(0,5))
-  expect_equal(Periodogram(rep(c(1,-1),5))[[2]],  c(0,0,0,0,20))
+  expect_equal(Periodogram(rep(c(1,-1),5))[[2]],  c(0,0,0,0,10))
 })

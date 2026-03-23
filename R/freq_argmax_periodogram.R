@@ -44,68 +44,93 @@ freq_argmax_periodogram <- function(x,
                                     delta_t = 1.0,
                                     f_min = 0,
                                     f_max = Inf,
-                                    welch_window = FALSE)
-{
-  if (!is.vector(x) |
-      !is.numeric(x) |
-      any(is.na(x)) |
-      any(!is.finite(x)))
-    stop("'x' must be non-infinite real-valued numeric vector")
-  if (length(x) == 0L)
-    stop("data series to short")
-  if (length(delta_t) != 1L |
-      !is.numeric(delta_t) |
-      !is.finite(delta_t) |
-      delta_t <= 0)
-    stop("'delta_t' must be positive finite numeric of length one")
-  if (length(welch_window) != 1L |
-      is.na(welch_window) |
-      is.infinite(welch_window) |
-      !is.logical(welch_window))
-    stop("'welch_window' must be logical of length one")
-  if (length(f_min) > 1L |
-      !is.numeric(f_min) |
-      is.na(f_min) |
-      !is.finite(f_min) |
-      f_min < 0)
-    stop("'f_min' must be must be positive numeric of length one")
-  if (length(f_max) > 1L |
-      !is.numeric(f_max) |
-      is.na(f_max) |
-      f_max == -Inf |
-      f_max <= 0)
-    stop("'f_max' must be must be positive numeric of length one")
-  if (f_max < f_min )
+                                    welch_window = FALSE) {
+  ## ---------------------------
+  ## Input validation
+  ## ---------------------------
+  stopifnot(
+    is.numeric(x),
+    is.vector(x),
+    length(x) > 1,
+    all(is.finite(x)),
+    is.numeric(delta_t),
+    length(delta_t) == 1,
+    is.finite(delta_t),
+    delta_t > 0,
+    is.logical(welch_window),
+    length(welch_window) == 1,
+    is.numeric(f_min),
+    length(f_min) == 1,
+    is.finite(f_min),
+    f_min >= 0,
+    is.numeric(f_max),
+    length(f_max) == 1,
+    f_max > 0
+  )
+
+  if (f_max < f_min)
     stop("'f_max' < 'f_min'")
-  if (f_min >  1. / 2 / delta_t)
-    stop("'f_min' is larger than the maximum of the sampled frequencies")
-  if (f_max <  1 / length(x) / delta_t)
-    stop("'f_max' is smaller than the minimum of the sampled frequencies")
-  if (stats::var(x) == 0)
-  {
-    res <- list(freq_argmax_periodogram = NA_real_, Max = NA_real_ ,expl_var = NA_real_)
-    message("time series 'x' does not contain fluctuations, returning NA")
 
+  nyquist <- 1 / (2 * delta_t)
+  if (f_min > nyquist)
+    stop("'f_min' exceeds Nyquist frequency")
+
+  ## ---------------------------
+  ## Handle constant signal
+  ## ---------------------------
+  var_x <- stats::var(x)
+
+  if (var_x == 0) {
+    warning("'x' has zero variance")
+    return(list(
+      freq_argmax_periodogram = NA_real_,
+      Max_P = NA_real_,
+      expl_var = NA_real_
+    ))
   }
-  else
-  {
-    x <- x - mean(x)
-    P <- Periodogram(x, delta_t = delta_t, welch_window = welch_window)
-    freq <- P$Frequency
-    w <- which(freq >= f_min & freq <= f_max)
-    if (length(w) == 0) stop("Frequency range does not contain sampled frequencies")
-    if (length(w) < 4) warning("Frequency range contains less than 4 frequencies")
-    freq <- freq[w]
-    PP <- P$PSD[w]
-    ww <- which.max(PP)
-    argmax_freq <-  freq[(which.max(PP))]
-    Max = max(PP)
-    expl_var <- max(PP) / sum(PP)
 
+  ## ---------------------------
+  ## Compute periodogram
+  ## ---------------------------
+  x_centered <- x - mean(x)
 
-    res <- list(freq_argmax_periodogram = argmax_freq, Max_P = Max , expl_var = expl_var)
+  P <- Periodogram(x_centered, delta_t = delta_t, welch_window = welch_window)
 
+  freq <- P$Frequency
+  psd <- P$PSD
 
-  }
-  return(res)
+  ## ---------------------------
+  ## Frequency filtering
+  ## ---------------------------
+  idx <- which(freq >= f_min & freq <= f_max)
+
+  if (length(idx) == 0)
+    stop("No sampled frequencies in given range")
+  if (length(idx) < 4)
+    warning("Frequency range contains < 4 points")
+
+  freq_sub <- freq[idx]
+  psd_sub <- psd[idx]
+
+  ## ---------------------------
+  ## Argmax
+  ## ---------------------------
+  best_idx <- which.max(psd_sub)
+
+  freq_max <- freq_sub[best_idx]
+  max_power <- psd_sub[best_idx]
+
+  ## ---------------------------
+  ## Explained variance (normalized power)
+  ## ---------------------------
+  expl_var <- max_power / sum(psd_sub)
+
+  ## ---------------------------
+  ## Output
+  ## ---------------------------
+  list(
+    freq_argmax_periodogram = freq_max,
+    Max_P = max_power,
+    expl_var = expl_var
+  )
 }

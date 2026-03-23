@@ -6,7 +6,7 @@
 #'
 #' @return  a named list containing the following components:
 #' \itemize{
-#'   \item `Freqeuncy` -  a real valued array  containing the frequencies.
+#'   \item `Frequency` -  a real valued array  containing the frequencies.
 #'   \item `PSD` -  a real valued array containing the computed power spectral density.
 #' }
 #' @export
@@ -28,48 +28,68 @@
 #' plot( P2$Frequency, P2$Power, type = 'l', col = "orange")
 #' points(P2$Frequency, P2$Power, pch = 21, bg = "black", cex = 0.2)
 #'
-Periodogram <- function(x, delta_t = 1.0, welch_window = FALSE)
-{
-  if (!is.vector(x) |
-      !is.numeric(x) |
-      any(is.na(x)) |
-      any(is.infinite(x))) stop("'x' must be non-infinite real-valued numeric vector")
-  if (length(x) == 0L) stop("data series to short")
-  if (!is.numeric(delta_t) |
-      length(delta_t) != 1L |
-      is.na(delta_t) |
-      is.infinite(delta_t)) stop("'delta_t' must be finite numeric of length one")
-  if (delta_t <= 0) stop("'delta_t' must be positive (>0)")
-  if (length(welch_window) != 1L |
-      !is.logical(welch_window)) stop("'welch_window' must be logical of length one")
+Periodogram <- function(x, delta_t = 1.0, welch_window = FALSE) {
+  # ---- Input validation ----
+  if (!is.numeric(x) || !is.vector(x) || anyNA(x) || any(!is.finite(x))) {
+    stop("'x' must be a finite, non-missing numeric vector")
+  }
 
+  n <- length(x)
+  if (n < 2L) {
+    stop("'x' must contain at least two observations")
+  }
 
-  N <- length(x)
-  N_half <- floor(N/2)
-  delta_f <- 1./delta_t
-  x_demean <- x - mean(x)
-  if (welch_window) x_demean <- x_demean*welch(N)
-  P <- delta_t * abs(stats::fft(x_demean))
-  P <- 2 * P[2: (1+ N_half)]^2
-  P <- P /N /delta_t
+  if (!is.numeric(delta_t) || length(delta_t) != 1L || !is.finite(delta_t) || delta_t <= 0) {
+    stop("'delta_t' must be a single positive finite number")
+  }
 
-  f <- delta_f * (1 : floor(N_half))/N
+  if (!is.logical(welch_window) || length(welch_window) != 1L) {
+    stop("'welch_window' must be a single logical value")
+  }
 
-  res <- list(Frequency = f, PSD = P)
+  # ---- Preprocessing ----
+  x_centered <- x - mean(x)
+
+  if (welch_window) {
+    w <- welch_window_fn(n)
+    x_centered <- x_centered * w
+
+    # Optional: normalize for window power (important for PSD correctness)
+    U <- mean(w^2)
+  } else {
+    U <- 1
+  }
+
+  # ---- FFT ----
+  X <- stats::fft(x_centered)
+
+  # ---- One-sided PSD ----
+  n_half <- floor(n / 2)
+  freqs <- (0:n_half) / (n * delta_t)
+
+  # Raw periodogram
+  P <- (Mod(X)^2) * delta_t / (n * U)
+
+  # One-sided correction (exclude DC and Nyquist handling)
+  P <- P[1:(n_half + 1)]
+  if (n > 2) {
+    P[2:n_half] <- 2 * P[2:n_half]
+  }
+
+  # Remove DC component
+  res <- list(
+    Frequency = freqs[-1],
+    PSD = P[-1]
+  )
+
   return(res)
 }
 
 
-
-welch <- function(N) {
-  # N - length of the time series
-
-  N_half  <-  floor(N/2)
-  f <-  (1: N_half) - 0.5
-  if (N %% 2 == 0) welch_window_function <- 1-(c(rev(f),f)/( N_half))^2.  else welch_window_function <- 1. - (c(rev(f),0,f)/N_half)^2.
-
-  return( welch_window_function)
-
+welch_window_fn <- function(n) {
+  # Symmetric Welch window
+  k <- seq_len(n) - 1
+  m <- (n - 1) / 2
+  w <- 1 - ((k - m) / m)^2
+  return(w)
 }
-
-

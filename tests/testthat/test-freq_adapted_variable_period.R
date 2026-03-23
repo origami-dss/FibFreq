@@ -44,12 +44,12 @@ test_that("freq_adapted_variable_period throws an error in case of non-numerical
 test_that("freq_adapted_variable_period returns an array of length 4)", {
   expect_length(freq_adapted_variable_period(1:10), 4)
   expect_length(freq_adapted_variable_period(1:11), 4)
-  expect_length(freq_adapted_variable_period(rep(0,10)), 4)
+  expect_length(freq_adapted_variable_period(rep(c(0,1),10)), 4)
 })
 
 test_that("freq_adapted_variable_period returns correct output", {
 
-  expect_equal(freq_adapted_variable_period(rep(c(1,-1),5))[[1]], 0.5)
+  expect_equal(unname(freq_adapted_variable_period(rep(c(1,-1),5))[[1]]), 0.5)
 
   x1 <- sin(0.05 * 2*pi * (1:100))
   x2 <- 3 * sin(0.05 * 2*pi * (1:100)) + 1* sin(0.20 * 2*pi * (1:100))

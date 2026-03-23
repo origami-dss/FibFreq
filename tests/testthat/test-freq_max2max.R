@@ -47,7 +47,6 @@ test_that("freq_max2max writes a message in case of var(x) = 0", {
 
 
 test_that("freq_max2max returns an array of length 4", {
-
   expect_length(freq_max2max(rep(c(-1,1),5)), 4)
   expect_length(freq_max2max(rep(c(-1, 0, 0, 0, 0, 1, 0, 0, 0, 0), 5)), 4)
   expect_length(freq_max2max(1:11), 4)
@@ -58,7 +57,7 @@ test_that("freq_max2max returns an array of length 4", {
 
 test_that("freq_max2max returns correct output", {
   expect_equal(freq_max2max(1:10), list(freq_max2max = NA_real_, c_v = NA_real_, n_max = 0, maxima_sampled = integer(0)))
-  expect_equal(freq_max2max(rep(0,10)), list(freq_max2max = NA_real_, c_v = NA_real_, n_max = NA_real_, maxima_sampled = integer(0)))
+  expect_equal(freq_max2max(rep(0,10)), list(freq_max2max = NA_real_, c_v = NA_real_, n_max = 0, maxima_sampled = integer(0)))
   expect_equal(freq_max2max(rep(c(1,-1),5)),  list(freq_max2max = NA_real_,  c_v = NA_real_, n_max = 0, maxima_sampled = integer(0)))
   expect_equal(freq_max2max(rep(c(-1, 0., 0., 0., 0., 1, 0., 0., 0., 0.), 5)), list(freq_max2max = 0.1, c_v = 0,   n_max = 4.0, maxima_sampled = c(6, 16, 26, 36)))
   expect_equal(freq_max2max(rep(c(-1, 0.1, 0.1, 0.1, 0.1, 1, 0.1, 0.1, 0.1, 0.1), 5)), list(freq_max2max = 0.1, c_v = 0,  n_max = 4.0, maxima_sampled = c(6, 16, 26, 36)))

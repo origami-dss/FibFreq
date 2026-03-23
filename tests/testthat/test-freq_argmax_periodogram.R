@@ -51,8 +51,8 @@ test_that("freq_argmax_periodogram throws an error in case of welch_window is ve
   expect_error(freq_argmax_periodogram(rep(0,10), delta_t = 0.5, welch_window = c(FALSE, TRUE)))
   expect_error(freq_argmax_periodogram(rep(0,10), delta_t = 0.5, welch_window = 1))
   expect_error(freq_argmax_periodogram(rep(0,10), delta_t = 0.5, welch_window = "A"))
-  expect_error(freq_argmax_periodogram(rep(0,10), delta_t = 0.5, welch_window = NA))
-  expect_error(freq_argmax_periodogram(rep(0,10), delta_t = 0.5, welch_window = NaN))
+  expect_error(freq_argmax_periodogram(rep(c(0,1),10), delta_t = 0.5, welch_window = NA))
+  expect_error(freq_argmax_periodogram(rep(c(0,1),10), delta_t = 0.5, welch_window = NaN))
   expect_error(freq_argmax_periodogram(rep(0,10), delta_t = 0.5, welch_window = Inf))
   expect_error(freq_argmax_periodogram(rep(0,10), delta_t = 0.5, welch_window = NULL))
 
@@ -116,7 +116,7 @@ test_that("freq_argmax_periodogram returns an array of length 3", {
   expect_length(freq_argmax_periodogram(rep(c(-1,1),5)), 3)
   expect_length(freq_argmax_periodogram(1:11), 3)
   expect_length(freq_argmax_periodogram(1:10), 3)
-  expect_length(freq_argmax_periodogram(rep(0,10)), 3)
+  expect_length(freq_argmax_periodogram(rep(c(0,1),10)), 3)
 
 })
 

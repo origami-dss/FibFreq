@@ -30,66 +30,64 @@
 #' freq_threshold_crossing(ecg_6, delta_t = 0.001)
 #'
 
-freq_threshold_crossing <- function(x, delta_t = 1.0, thresh = 0)
-{
-  if (!is.vector(x) |
-      !is.numeric(x) |
-      any(is.na(x)) |
-      any(!is.finite(x)))
-    stop("'x' must be non-infinite real-valued numeric vector")
-  if (length(x) < 2)
-    stop("data series to short")
-  if (length(delta_t) != 1L |
-      !is.numeric(delta_t) |
-      !is.finite(delta_t) |
-      is.na(delta_t) |
-      delta_t <= 0)
-    stop("'delta_t' must be positive finite numeric of length one")
-  if (length(thresh) != 1L |
-      !is.numeric(thresh) |
-      is.na(thresh) |
-      !is.finite(thresh))
-    stop("'thresh' must be finite numeric of length one")
-  if (stats::var(x) == 0)
-  {
-    message("'x' does not contain fluctuations, returning NA")
+freq_threshold_crossing <- function(x, delta_t = 1.0, thresh = 0) {
 
-    res = list(
+  ## ---------------------------
+  ## Input validation
+  ## ---------------------------
+  stopifnot(
+    is.numeric(x),
+    is.vector(x),
+    length(x) > 1,
+    all(is.finite(x)),
+    is.numeric(delta_t),
+    length(delta_t) == 1,
+    is.finite(delta_t),
+    delta_t > 0
+  )
+
+
+  if (!is.null(thresh)) {
+    if (!is.numeric(thresh) || length(thresh) != 1L || !is.finite(thresh)) {
+      stop("'thresh' must be a single finite number")
+    }
+  } else {
+    thresh <- mean(x)
+  }
+
+  # ---- Helper for NA result ----
+  empty_result <- function() {
+    list(
       freq_threshold_crossing = NA_real_,
       c_v = NA_real_,
-      n_thresh = NA_real_,
-      threshold_crossings = integer()
+      n_thresh = NA_integer_,
+      threshold_crossings = integer(0)
     )
-  } else {
-    if (missing(thresh))
-      thresh = mean(x)
-
-    Timings <- which(upward_threshold_crossing(x, thresh))
-    if (length(Timings) < 3) {
-      message("'x' does not contain enough threshold crossings, returning NA")
-
-      res <- list(
-        freq_threshold_crossing = NA_real_,
-        c_v = NA_real_,
-        n_thresh = NA_real_,
-        threshold_crossings = integer(0)
-      )
-    } else
-    {
-      ISI_ZC <-  diff(Timings) * delta_t
-      n_ISI_ZC <- length(ISI_ZC)
-
-      freq_TC <-  1. / mean(ISI_ZC)
-      c_v <- coefficient_of_variation(Timings)
-
-      res <- list(
-        freq_threshold_crossing = freq_TC,
-        c_v = c_v,
-        n_thresh = length(Timings),
-        threshold_crossings = Timings
-      )
-
-    }
   }
-  return(res)
+
+  # ---- No variation case ----
+  if (stats::var(x) == 0) {
+    message("'x' does not contain fluctuations, returning NA")
+    return(empty_result())
+  }
+
+  # ---- Compute threshold crossings ----
+  timings <- which(upward_threshold_crossing(x, thresh))
+
+  if (length(timings) < 3L) {
+    message("'x' does not contain enough threshold crossings, returning NA")
+    return(empty_result())
+  }
+
+  # ---- Compute metrics ----
+  isi <- diff(timings) * delta_t
+
+  result <- list(
+    freq_threshold_crossing = 1 / mean(isi),
+    c_v = coefficient_of_variation(isi),
+    n_thresh = length(timings),
+    threshold_crossings = timings
+  )
+
+  return(result)
 }
