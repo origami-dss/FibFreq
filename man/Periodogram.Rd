@@ -16,7 +16,7 @@ Periodogram(x, delta_t = 1, welch_window = FALSE)
 \value{
 a named list containing the following components:
 \itemize{
-\item \code{Freqeuncy} -  a real valued array  containing the frequencies.
+\item \code{Frequency} -  a real valued array  containing the frequencies.
 \item \code{PSD} -  a real valued array containing the computed power spectral density.
 }
 }

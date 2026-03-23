@@ -4,7 +4,7 @@
 \alias{freq_max2max}
 \title{Frequency Estimation by Evaluating the Max-to-Max Time Intervals}
 \usage{
-freq_max2max(x, delta_t = 1, ...)
+freq_max2max(x, delta_t = 1, ..., .warn = TRUE)
 }
 \arguments{
 \item{x}{a non-infinite real-valued numeric vector containing the values of the time series}
@@ -12,6 +12,8 @@ freq_max2max(x, delta_t = 1, ...)
 \item{delta_t}{a real value, the sampling time, default value is delta_t = 1.0}
 
 \item{...}{optional arguments to be passed to the function splus2R::peaks. Otherwise span = 11, strict = TRUE and endbehavior = 0 are used.}
+
+\item{.warn}{Logical; if TRUE (default), messages are shown for edge cases.}
 }
 \value{
 a named list containing the following components:
