@@ -93,7 +93,7 @@ freq_ICD <- function(x,
     args_max <- list(span = 11, strict = FALSE, endbehavior = 0, x = x)
 
     # Update defaults with provided args (only allowed ones)
-    args_max <- modifyList(args_max, args[intersect(names(args), allowed_args)])
+    args_max <- utils::modifyList(args_max, args[intersect(names(args), allowed_args)])
 
     # Ensure x is always set correctly
     args_max$x <- x

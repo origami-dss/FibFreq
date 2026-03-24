@@ -84,7 +84,7 @@ freq_max2max <- function(x, delta_t = 1, ..., .warn = TRUE)
     message("Ignoring unknown arguments: ", paste(unknown, collapse = ", "))
   }
 
-  args_max <- modifyList(
+  args_max <- utils::modifyList(
     list(x = x, span = 11, strict = TRUE, endbehavior = 0),
     dots[intersect(names(dots), valid_args)]
   )

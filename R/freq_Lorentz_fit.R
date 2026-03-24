@@ -154,8 +154,8 @@ freq_Lorentz_fit <- function(x,
   ## Initial parameter estimates
   ## ---------------------------
   w_max <- which.max(Amp)
-  mean_freq <- weighted.mean(freq, Amp)
-  sigma_start <- sqrt(weighted.mean((freq - mean_freq)^2, Amp))
+  mean_freq <- stats::weighted.mean(freq, Amp)
+  sigma_start <- sqrt(stats::weighted.mean((freq - mean_freq)^2, Amp))
   freq_max = freq[w_max]
   data_fit <- data.frame(freq = freq, Amp = Amp)
 
