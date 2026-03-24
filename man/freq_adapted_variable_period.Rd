@@ -50,5 +50,5 @@ freq_argmax_periodogram(ecg_6, delta_t = 0.001)
 
 }
 \references{
-{ Diaz-Maue L, Witt A, Nobach H: \emph{Unraveling Cardiac Arrhythmia Frequency, Comparative Analysis Using Time and Frequency Domain Algorithms}. submitted to Frontiers in Signal Processing (2025)}
+{ Diaz-Maue L, Witt A, Nobach H: \emph{Unraveling Cardiac Arrhythmia Frequency, Comparative Analysis Using Time and Frequency Domain Algorithms}. Front. Signal Process., Sec. Biomed. Signal Process. 5 (2025),  \url{https://doi.org/10.3389/frsip.2025.1707422}}
 }

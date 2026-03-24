@@ -56,5 +56,5 @@ freq_ICD(ecg_6)
 \references{
 { Brueggemann T, Dahlke D, Chebbo A, and Neumann I: \emph{Tachycardia detection in modern implantable cardioverter–defibrillars}. Herzschrittmachertherapie and Elektrophysiologie 27, 171-185 (2016) }
 
-{ Diaz-Maue L, Witt A, Nobach H: \emph{Unraveling Cardiac Arrhythmia Frequency, Comparative Analysis Using Time and Frequency Domain Algorithms}. submitted to Frontiers in Signal Processing (2025)}
+{ Diaz-Maue L, Witt A, Nobach H: \emph{Unraveling Cardiac Arrhythmia Frequency, Comparative Analysis Using Time and Frequency Domain Algorithms}. Front. Signal Process., Sec. Biomedical Signal Processing 5 (2025),  \url{https://doi.org/10.3389/frsip.2025.1707422}}‚
 }

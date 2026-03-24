@@ -53,5 +53,5 @@ plot(1:1000, ecg_6, xlab = xlab, ylab = ylab, "l", lwd = 1.5)
 lines(1:1000, res$model, col = "red", lty = 2)
 }
 \references{
-{ Diaz-Maue L, Witt A, Nobach H: \emph{Unraveling Cardiac Arrhythmia Frequency, Comparative Analysis Using Time and Frequency Domain Algorithms}. submitted to Frontiers in Signal Processing (2025)}
+{ Diaz-Maue L, Witt A, Nobach H: \emph{Unraveling Cardiac Arrhythmia Frequency, Comparative Analysis Using Time and Frequency Domain Algorithms}. Front. Signal Process., Sec. Biomed. Signal Process. 5 (2025),  \url{https://doi.org/10.3389/frsip.2025.1707422}}
 }

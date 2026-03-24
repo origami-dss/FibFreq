@@ -20,7 +20,7 @@
 #' }
 #' @export
 #' @references{ Brueggemann T, Dahlke D, Chebbo A, and Neumann I: *Tachycardia detection in modern implantable cardioverter–defibrillars*. Herzschrittmachertherapie and Elektrophysiologie 27, 171-185 (2016) }
-#' @references{ Diaz-Maue L, Witt A, Nobach H: *Unraveling Cardiac Arrhythmia Frequency, Comparative Analysis Using Time and Frequency Domain Algorithms*. submitted to Frontiers in Signal Processing (2025)}
+#' @references{ Diaz-Maue L, Witt A, Nobach H: *Unraveling Cardiac Arrhythmia Frequency, Comparative Analysis Using Time and Frequency Domain Algorithms*. Front. Signal Process., Sec. Biomedical Signal Processing 5 (2025),  \url{https://doi.org/10.3389/frsip.2025.1707422}}‚
 #' @examples
 #' # Let's Consider two synthetic time series and an example from the attached data set:
 #' x1 = sin(0.02 * 2*pi * (1:1000))

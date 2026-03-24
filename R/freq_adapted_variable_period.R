@@ -23,7 +23,7 @@
 #'        (iii) the time series length used for the computation and
 #'        (iv) the explained variance.
 #' @export
-#' @references{ Diaz-Maue L, Witt A, Nobach H: *Unraveling Cardiac Arrhythmia Frequency, Comparative Analysis Using Time and Frequency Domain Algorithms*. submitted to Frontiers in Signal Processing (2025)}
+#' @references{ Diaz-Maue L, Witt A, Nobach H: *Unraveling Cardiac Arrhythmia Frequency, Comparative Analysis Using Time and Frequency Domain Algorithms*. Front. Signal Process., Sec. Biomed. Signal Process. 5 (2025),  \url{https://doi.org/10.3389/frsip.2025.1707422}}
 #' @examples
 #' # Let's consider three synthetic time series and an example from the attached data set:
 #' x1 <- sin( 0.05 * 2 * pi * (1:100))

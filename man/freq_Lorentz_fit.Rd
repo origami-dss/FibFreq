@@ -79,7 +79,7 @@ col = c("black","red"), lty = c(0,1), pch = c(3,NA))
 
 }
 \references{
-{ Diaz-Maue L, Witt A, Nobach H: Unraveling Cardiac Arrhythmia Frequency, Comparative Analysis Using Time and Frequency Domain Algorithms. submitted to Frontiers in Signal Processing (2025)}
+{ Diaz-Maue L, Witt A, Nobach H: \emph{Unraveling Cardiac Arrhythmia Frequency, Comparative Analysis Using Time and Frequency Domain Algorithms}. Front. Signal Process., Sec. Biomed. Signal Process. 5 (2025),  \url{https://doi.org/10.3389/frsip.2025.1707422}}
 
 { M. Galassi et al., GNU Scientific Library Reference Manual (3rd Ed.), 2009, ISBN 0954612078. }
 }
