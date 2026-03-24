@@ -3,7 +3,7 @@
 \docType{data}
 \name{MiceFibECGs}
 \alias{MiceFibECGs}
-\title{ECGs of 113 Fibrillating Murine Hearts}
+\title{ECGs of 112 Fibrillating Murine Hearts}
 \format{
 A matrix of 112 columns and 1000 rows:
 Each column contains a single murine ECG.
@@ -32,7 +32,8 @@ In order to remove traces of the 50 Hz utility frequency a fifth order bandpass 
 \examples{
 require(graphics)
 ii <- 1
-plot(MiceFibECGs[ ,ii], xlab = "Time [s]", ylab = "ECG", main = colnames(MiceFibECGs)[ii])
+plot(1:1000, MiceFibECGs[ ,ii], xlab = "Time [ms]", ylab = "ECG")
+lines(1:1000, MiceFibECGs[ ,ii], type = "l")
 
 }
 \keyword{datasets}

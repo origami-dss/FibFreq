@@ -21,6 +21,7 @@
 #' @examples
 #' require(graphics)
 #' ii <- 1
-#' plot(MiceFibECGs[ ,ii], xlab = "Time [s]", ylab = "ECG", main = colnames(MiceFibECGs)[ii])
+#' plot(1:1000, MiceFibECGs[ ,ii], xlab = "Time [ms]", ylab = "ECG")
+#' lines(1:1000, MiceFibECGs[ ,ii], type = "l")
 #'
 "MiceFibECGs"
