@@ -1,4 +1,4 @@
-#' ECGs of 113 Fibrillating Murine Hearts
+#' ECGs of 112 Fibrillating Murine Hearts
 #'
 #' The data set contains 112 murine ecgs.
 #' The ecgs were obtained from seven mice, of which four were female (aged 112 or 113 weeks)
